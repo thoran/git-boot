@@ -1,88 +1,18 @@
 #!/usr/bin/env ruby
 # git-boot
 
-# 20100310
-# 0.3.0
-
-# Discussion: 
-# There's a problem with using Ruby's standard URI library for SSH-style network descriptors...  
-
-# With neither protocol, nor colons:
-# uri1 = 'git@git.example.com/usr/local/git_repos/blah.git'
-# URI.parse(uri1).path
-# => "git@git.example.com/usr/local/git_repos/blah.git"
-
-# With a protocol and without colons:
-# uri2 = 'git://git@git.example.com/usr/local/git_repos/blah.git'
-# URI.parse(uri2).path
-# => "/usr/local/git_repos/blah.git"
-
-# With a protocol and with a colon:
-# uri3 = 'git://git@git.example.com:/usr/local/git_repos/blah.git'
-# URI.parse(uri3).path
-# => "/usr/local/git_repos/blah.git"
-
-# With no protocol and a colon:
-# uri4 = 'git@git.example.com:/usr/local/git_repos/blah.git'
-# URI.parse(uri4).path
-# =>
-# URI::InvalidURIError: bad URI(is not URI?): git@git.example.com:/usr/local/git_repos/blah.git
-# 	from /opt/local/lib/ruby/1.8/uri/common.rb:436:in `split'
-# 	from /opt/local/lib/ruby/1.8/uri/common.rb:485:in `parse'
-
-# So, my solution is to add a protocol and to strip colons, since this seems to be the easiest way to get this to work for a reasonable number of options...  
-
-# Unfortunately, I also need the SSH-style network identifier as well for the locally-issued commands.  
+# 2011.02.04
+# 0.4.0
 
 require 'fileutils'
+require 'ImpURI'
+require 'net/ssh/shell'
+require 'Switches'
 require 'uri'
 
-require 'net/ssh/shell'
-
-require 'Switches'
-
 def path_to_repository_with_extension(uri)
-  path = URI.parse(normalised_uri(uri)).path
+  path = ImpURI.new(uri).path
   path =~ /\.git$/ ? path : path + '.git'
-end
-
-def normalised_uri(uri)
-  uri_with_protocol(uri_without_colon(uri))
-end
-
-def uri_with_protocol(uri)
-  uri =~ /^[a-z]*?:\/\// ? uri : 'git://' + uri
-end
-
-def uri_without_colon(uri)
-  uri.gsub(':','')
-end
-
-def uri_with_colon(uri)
-  path = path_to_repository_with_extension(uri)
-  hostname = URI.parse(normalised_uri(uri)).host
-  protocol = URI.parse(normalised_uri(uri)).scheme
-  username = URI.parse(normalised_uri(uri)).user
-  "#{protocol}://#{username}@#{hostname}:#{path}"
-end
-
-def uri_without_protocol(uri)
-  uri.gsub(/^[a-z]*?:\/\//, '')
-end
-
-def ssh_style_uri(uri)
-  uri_without_protocol(uri_with_colon(uri))
-end
-
-def do_remote_repo(switches)
-  Net::SSH.start(URI.parse(normalised_uri(switches.uri)).host, switches.username, :password => switches.password) do |ssh|
-    ssh.shell do |sh|
-      sh.execute "mkdir #{path_to_repository_with_extension(switches.uri)}"
-      sh.execute "cd #{path_to_repository_with_extension(switches.uri)}"
-      sh.execute "git init"
-      sh.execute "exit"
-    end
-  end
 end
 
 def do_local_repo
@@ -97,8 +27,21 @@ def do_local_repo
   end
 end
 
+def do_remote_repo(switches)
+  Net::SSH.start(ImpURI.new(switches.uri).host, switches.username, :password => switches.password) do |ssh|
+    ssh.shell do |sh|
+      sh.execute "mkdir #{path_to_repository_with_extension(switches.uri)}"
+      sh.execute "cd #{path_to_repository_with_extension(switches.uri)}"
+      sh.execute "git --bare init"
+      sh.execute "exit"
+    end
+  end
+end
+
 def do_push_to_remote(switches)
-  system "git remote add origin #{ssh_style_uri(switches.uri)}"
+  iuri = ImpURI.new(switches.uri)
+  ssh_style_uri = "#{switches.username}@#{iuri.hostname}:#{iuri.path}"
+  system "git remote add origin #{ssh_style_uri}"
   system "git push origin master"
 end
 
