@@ -2,7 +2,7 @@
 # git-boot
 
 # 2011.02.04
-# 0.4.0
+# 0.5.0
 
 require 'fileutils'
 require 'ImpURI'
@@ -28,7 +28,7 @@ def do_local_repo
 end
 
 def do_remote_repo(switches)
-  Net::SSH.start(ImpURI.new(switches.uri).host, switches.username, :password => switches.password) do |ssh|
+  Net::SSH.start(ImpURI.new(switches.uri).host, username, :password => password) do |ssh|
     ssh.shell do |sh|
       sh.execute "mkdir #{path_to_repository_with_extension(switches.uri)}"
       sh.execute "cd #{path_to_repository_with_extension(switches.uri)}"
@@ -39,18 +39,47 @@ def do_remote_repo(switches)
 end
 
 def do_push_to_remote(switches)
-  iuri = ImpURI.new(switches.uri)
-  ssh_style_uri = "#{switches.username}@#{iuri.hostname}:#{iuri.path}"
+  ssh_style_uri = "#{username}@#{hostname}:#{path}"
   system "git remote add origin #{ssh_style_uri}"
   system "git push origin master"
+end
+
+def username(switches)
+  switches.username || ImpURI.new(switches.uri).username
+end
+def u(switches); username(switches); end
+def user(switches); username(switches); end
+
+def password(switches)
+  switches.password || ImpURI.new(switches.uri).password
+end
+def pwd(switches); password(switches); end
+def pass(switches); password(switches); end
+  
+def hostname(switches)
+  switches.hostname || ImpURI.new(switches.uri).hostname
+end
+def h(switches); hostname(switches); end
+def host(switches); hostname(switches); end
+
+def path(switches)
+  switches.path || ImpURI.new(switches.url).path
 end
 
 def main
   switches = Switches.new do |s|
     s.optional!(:u, :user, :username)
     s.optional!(:p, :pwd, :pass, :password)
+    s.optional!(:h, :host, :hostname)
+    s.optional!(:path)
     s.optional!(:uri, :url)
   end
+  p all_switches = switches.instance_variable_get(:@all_switches)
+  all_switches.each do |switch|
+    p switches.send(switch)
+  end
+  exit
+  
   do_local_repo
   if switches.u && switches.p && switches.uri
     do_remote_repo(switches)
