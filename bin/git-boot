@@ -1,15 +1,18 @@
 #!/usr/bin/env ruby
 # git-boot
 
-# 20111011
-# 0.5.2
+# 20120402, 03
+# 0.6.0
 
 require 'fileutils'
+require 'HTTP'
 require 'ImpURI.rbd/ImpURI'
 require 'net/ssh/shell'
 
-def path_to_repository_with_extension(iuri)
-  iuri.path =~ /\.git$/ ? iuri.path : iuri.path + '.git'
+include HTTP
+
+def path_to_repository_with_extension(impuri)
+  impuri.path =~ /\.git$/ ? impuri.path : impuri.path + '.git'
 end
 
 def create_local_repo
@@ -24,29 +27,37 @@ def create_local_repo
   end
 end
 
-def create_remote_repo(iuri)
-  Net::SSH.start(iuri.host, iuri.username, :password => iuri.password) do |ssh|
+def create_remote_repo(impuri)
+  Net::SSH.start(impuri.host, impuri.username, :password => impuri.password) do |ssh|
     ssh.shell do |sh|
-      sh.execute "mkdir #{path_to_repository_with_extension(iuri)}"
-      sh.execute "cd #{path_to_repository_with_extension(iuri)}"
+      sh.execute "mkdir #{path_to_repository_with_extension(impuri)}"
+      sh.execute "cd #{path_to_repository_with_extension(impuri)}"
       sh.execute "git --bare init"
       sh.execute "exit"
     end
   end
 end
 
-def push_to_remote_repo(iuri)
-  ssh_style_uri = "#{iuri.username}@#{iuri.hostname}:#{iuri.path}"
+def create_remote_github_repo(impuri)
+  post('https://github.com/api/v2/json/repos/create', {:login => impuri.username, :token => impuri.password, :name => File.basename(impuri.path)})
+end
+
+def push_to_remote_repo(impuri)
+  ssh_style_uri = "#{impuri.username}@#{impuri.hostname}:#{impuri.path}"
   system "git remote add origin #{ssh_style_uri}"
   system "git push origin master"
 end
 
 def main
-  iuri = ImpURI.new(ARGV[0])
+  impuri = ImpURI.new(ARGV[0])
   create_local_repo
-  if iuri
-    create_remote_repo(iuri)
-    push_to_remote_repo(iuri)
+  if impuri
+    if impuri.hostname == 'github.com'
+      create_remote_github_repo(impuri)
+    else 
+      create_remote_repo(impuri)
+    end
+    push_to_remote_repo(impuri)
   end
 end
 
