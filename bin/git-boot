@@ -2,7 +2,7 @@
 # git-boot
 
 # 20140509, 10
-# 0.6.1
+# 0.6.2
 
 # Usage:
 # 1. With no remote specified
@@ -20,6 +20,8 @@
 # 4. + require 'File/self.basename_without_extname'.
 # 5. ~ create_remote_github_repo(), to work with v3 of the Github API.
 # 6. + push_to_github_repo(), since it wants 'git' as the username.
+# 1/2
+# 7. ~ main, /impuri/ARGV[0]/, since the former test fails to correctly detect if a remote is specified.
 
 require 'File/self.basename_without_extname'
 require 'fileutils'
@@ -75,7 +77,7 @@ end
 def main
   impuri = ImpURI.new(ARGV[0])
   create_local_repo
-  if impuri
+  if ARGV[0]
     if impuri.hostname == 'github.com'
       create_remote_github_repo(impuri)
       push_to_github_repo(impuri)
