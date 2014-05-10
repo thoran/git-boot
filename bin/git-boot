@@ -1,29 +1,64 @@
 # git-mkremote
 
 # 20100310
-# 0.1.1
+# 0.1.2
 
-require 'fileutils'
+# Discussion: 
+# There's a problem with using Ruby's standard URI library for SSH-like network descriptors...  
+
+# With neither protocol, nor colons:
+# uri1 = 'git@git.example.com/usr/local/git_repos/blah.git'
+# URI.parse(uri1).path
+# => "git@git.example.com/usr/local/git_repos/blah.git"
+
+# With a protocol and without colons:
+# uri2 = 'git://git@git.example.com/usr/local/git_repos/blah.git'
+# URI.parse(uri2).path
+# => "/usr/local/git_repos/blah.git"
+
+# With a protocol and with a colon:
+# uri3 = 'git://git@git.example.com:/usr/local/git_repos/blah.git'
+# URI.parse(uri3).path
+# => "/usr/local/git_repos/blah.git"
+
+# With no protocol and a colon:
+# uri4 = 'git@git.example.com:/usr/local/git_repos/blah.git'
+# URI.parse(uri4).path
+# =>
+# URI::InvalidURIError: bad URI(is not URI?): git@git.example.com:/usr/local/git_repos/blah.git
+# 	from /opt/local/lib/ruby/1.8/uri/common.rb:436:in `split'
+# 	from /opt/local/lib/ruby/1.8/uri/common.rb:485:in `parse'
+
+# So, my solution is to add a protocol and to strip colons, since this seems to be the easiest way to get this to work for a reasonable number of options...  
+
 require 'uri'
 
 require 'net/ssh/shell'
 
 require 'Switches'
 
-def path_to_repository_with_ext(uri)
-  path = URI.parse(uri_with_protocol(uri))
+def path_to_repository_with_extension(uri)
+  path = URI.parse(normalised_uri(uri)).path
   path =~ /\.git$/ ? path : path + '.git'
+end
+
+def normalised_uri(uri)
+  uri_with_protocol(uri_without_colon(uri))
 end
 
 def uri_with_protocol(uri)
   uri =~ /^[a-z]*?:\/\// ? uri : 'git://' + uri
 end
 
+def uri_without_colon(uri)
+  uri.gsub(':','')
+end
+
 def do_remote(switches)
-  Net::SSH.start(URI.parse(uri_with_protocol(switches.uri)).host, switches.username, :password => switches.password) do |ssh|
+  Net::SSH.start(URI.parse(normalised_uri(switches.uri)).host, switches.username, :password => switches.password) do |ssh|
     ssh.shell do |sh|
-      sh.execute "mkdir #{path_to_repository_with_ext(switches.uri)}"
-      sh.execute "cd #{path_to_repository_with_ext(switches.uri)}"
+      sh.execute "mkdir #{path_to_repository_with_extension(switches.uri)}"
+      sh.execute "cd #{path_to_repository_with_extension(switches.uri)}"
       sh.execute "git init"
       sh.execute "exit"
     end
@@ -31,7 +66,10 @@ def do_remote(switches)
 end
 
 def do_local(switches)
-  system "git remote add origin #{switches.uri}"
+  require 'pp'
+  pp uri_without_colon(switches.uri)
+  pp normalised_uri(switches.uri)
+  system "git remote add origin #{uri_without_colon(switches.uri)}"
   system "git push origin master"
 end
 
@@ -41,7 +79,7 @@ def main
     s.set(:p, :pwd, :pass, :password)
     s.set(:uri, :url)
   end
-  do_remote(switches)
+  # do_remote(switches)
   do_local(switches)
 end
 
