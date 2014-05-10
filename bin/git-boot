@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
-# init-git
+# git-boot
 
 # 20100310
-# 0.2.1
+# 0.3.0
 
 # Discussion: 
 # There's a problem with using Ruby's standard URI library for SSH-style network descriptors...  
@@ -74,7 +74,7 @@ def ssh_style_uri(uri)
   uri_without_protocol(uri_with_colon(uri))
 end
 
-def do_remote(switches)
+def do_remote_repo(switches)
   Net::SSH.start(URI.parse(normalised_uri(switches.uri)).host, switches.username, :password => switches.password) do |ssh|
     ssh.shell do |sh|
       sh.execute "mkdir #{path_to_repository_with_extension(switches.uri)}"
@@ -85,11 +85,11 @@ def do_remote(switches)
   end
 end
 
-def do_local
+def do_local_repo
   system "git init" unless File.exist?('.git')
   if !Dir['*'].empty?
     system "git add ."
-    system "git commit -m '+ *"
+    system "git commit -m '+ *'"
   else
     FileUtils.touch('.gitignore')
     system "git add .gitignore"
@@ -97,7 +97,7 @@ def do_local
   end
 end
 
-def do_push(switches)
+def do_push_to_remote(switches)
   system "git remote add origin #{ssh_style_uri(switches.uri)}"
   system "git push origin master"
 end
@@ -108,10 +108,10 @@ def main
     s.optional!(:p, :pwd, :pass, :password)
     s.optional!(:uri, :url)
   end
-  do_local
+  do_local_repo
   if switches.u && switches.p && switches.uri
-    do_remote(switches)
-    do_push(switches)
+    do_remote_repo(switches)
+    do_push_to_remote(switches)
   end
 end
 
