@@ -1,7 +1,7 @@
 # git-mkremote
 
 # 20100310
-# 0.1.0
+# 0.1.1
 
 require 'fileutils'
 require 'uri'
@@ -11,12 +11,16 @@ require 'net/ssh/shell'
 require 'Switches'
 
 def path_to_repository_with_ext(uri)
-  path = URI.parse(uri)
+  path = URI.parse(uri_with_protocol(uri))
   path =~ /\.git$/ ? path : path + '.git'
 end
 
+def uri_with_protocol(uri)
+  uri =~ /^[a-z]*?:\/\// ? uri : 'git://' + uri
+end
+
 def do_remote(switches)
-  Net::SSH.start(URI.parse(switches.uri).host, switches.username, :password => switches.password) do |ssh|
+  Net::SSH.start(URI.parse(uri_with_protocol(switches.uri)).host, switches.username, :password => switches.password) do |ssh|
     ssh.shell do |sh|
       sh.execute "mkdir #{path_to_repository_with_ext(switches.uri)}"
       sh.execute "cd #{path_to_repository_with_ext(switches.uri)}"
@@ -27,8 +31,8 @@ def do_remote(switches)
 end
 
 def do_local(switches)
-  system("git remote add origin #{switches.uri}")
-  system("git push origin master")
+  system "git remote add origin #{switches.uri}"
+  system "git push origin master"
 end
 
 def main
