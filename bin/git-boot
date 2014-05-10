@@ -1,21 +1,18 @@
 #!/usr/bin/env ruby
 # git-boot
 
-# 2011.02.04
-# 0.5.0
+# 2011.02.05
+# 0.5.1
 
 require 'fileutils'
 require 'ImpURI'
 require 'net/ssh/shell'
-require 'Switches'
-require 'uri'
 
-def path_to_repository_with_extension(uri)
-  path = ImpURI.new(uri).path
-  path =~ /\.git$/ ? path : path + '.git'
+def path_to_repository_with_extension(iuri)
+  iuri.path =~ /\.git$/ ? iuri.path : iuri.path + '.git'
 end
 
-def do_local_repo
+def create_local_repo
   system "git init" unless File.exist?('.git')
   if !Dir['*'].empty?
     system "git add ."
@@ -27,63 +24,29 @@ def do_local_repo
   end
 end
 
-def do_remote_repo(switches)
-  Net::SSH.start(ImpURI.new(switches.uri).host, username, :password => password) do |ssh|
+def create_remote_repo(iuri)
+  Net::SSH.start(iuri.host, iuri.username, :password => iuri.password) do |ssh|
     ssh.shell do |sh|
-      sh.execute "mkdir #{path_to_repository_with_extension(switches.uri)}"
-      sh.execute "cd #{path_to_repository_with_extension(switches.uri)}"
+      sh.execute "mkdir #{path_to_repository_with_extension(iuri)}"
+      sh.execute "cd #{path_to_repository_with_extension(iuri)}"
       sh.execute "git --bare init"
       sh.execute "exit"
     end
   end
 end
 
-def do_push_to_remote(switches)
-  ssh_style_uri = "#{username}@#{hostname}:#{path}"
+def push_to_remote_repo(iuri)
+  ssh_style_uri = "#{iuri.username}@#{iuri.hostname}:#{iuri.path}"
   system "git remote add origin #{ssh_style_uri}"
   system "git push origin master"
 end
 
-def username(switches)
-  switches.username || ImpURI.new(switches.uri).username
-end
-def u(switches); username(switches); end
-def user(switches); username(switches); end
-
-def password(switches)
-  switches.password || ImpURI.new(switches.uri).password
-end
-def pwd(switches); password(switches); end
-def pass(switches); password(switches); end
-  
-def hostname(switches)
-  switches.hostname || ImpURI.new(switches.uri).hostname
-end
-def h(switches); hostname(switches); end
-def host(switches); hostname(switches); end
-
-def path(switches)
-  switches.path || ImpURI.new(switches.url).path
-end
-
 def main
-  switches = Switches.new do |s|
-    s.optional!(:u, :user, :username)
-    s.optional!(:p, :pwd, :pass, :password)
-    s.optional!(:h, :host, :hostname)
-    s.optional!(:path)
-    s.optional!(:uri, :url)
-  end
-  p all_switches = switches.instance_variable_get(:@all_switches)
-  all_switches.each do |switch|
-    p switches.send(switch)
-  end
-  exit
-  
-  do_local_repo
-  if switches.u && switches.p && switches.uri
-    do_remote_repo(switches)
-    do_push_to_remote(switches)
+  iuri = ImpURI.new(ARGV[0])
+  create_local_repo
+  if iuri
+    create_remote_repo(iuri)
+    push_to_remote_repo(iuri)
   end
 end
 
