@@ -1,10 +1,10 @@
 # git-mkremote
 
 # 20100310
-# 0.1.2
+# 0.1.3
 
 # Discussion: 
-# There's a problem with using Ruby's standard URI library for SSH-like network descriptors...  
+# There's a problem with using Ruby's standard URI library for SSH-style network descriptors...  
 
 # With neither protocol, nor colons:
 # uri1 = 'git@git.example.com/usr/local/git_repos/blah.git'
@@ -31,6 +31,8 @@
 
 # So, my solution is to add a protocol and to strip colons, since this seems to be the easiest way to get this to work for a reasonable number of options...  
 
+# Unfortunately, I also need the SSH-style network identifier as well for the locally-issued commands.  
+
 require 'uri'
 
 require 'net/ssh/shell'
@@ -54,6 +56,22 @@ def uri_without_colon(uri)
   uri.gsub(':','')
 end
 
+def uri_with_colon(uri)
+  path = path_to_repository_with_extension(uri)
+  hostname = URI.parse(normalised_uri(uri)).host
+  protocol = URI.parse(normalised_uri(uri)).scheme
+  username = URI.parse(normalised_uri(uri)).user
+  "#{protocol}://#{username}@#{hostname}:#{path}"
+end
+
+def uri_without_protocol(uri)
+  uri.gsub(/^[a-z]*?:\/\//, '')
+end
+
+def ssh_style_uri(uri)
+  uri_without_protocol(uri_with_colon(uri))
+end
+
 def do_remote(switches)
   Net::SSH.start(URI.parse(normalised_uri(switches.uri)).host, switches.username, :password => switches.password) do |ssh|
     ssh.shell do |sh|
@@ -66,10 +84,13 @@ def do_remote(switches)
 end
 
 def do_local(switches)
-  require 'pp'
-  pp uri_without_colon(switches.uri)
-  pp normalised_uri(switches.uri)
-  system "git remote add origin #{uri_without_colon(switches.uri)}"
+  # require 'pp'
+  # pp uri_without_colon(switches.uri)
+  # pp normalised_uri(switches.uri)
+  # pp ssh_style_uri(switches.uri)
+  # pp uri_with_colon(switches.uri)
+  # pp uri_without_protocol(switches.uri)
+  system "git remote add origin #{ssh_style_uri(switches.uri)}"
   system "git push origin master"
 end
 
@@ -79,7 +100,7 @@ def main
     s.set(:p, :pwd, :pass, :password)
     s.set(:uri, :url)
   end
-  # do_remote(switches)
+  do_remote(switches)
   do_local(switches)
 end
 
