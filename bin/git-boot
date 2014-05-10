@@ -1,0 +1,42 @@
+# git-mkremote
+
+# 20100310
+# 0.0.0
+
+require 'net/ssh/shell'
+
+require 'fileutils'
+require 'Switches'
+
+def path_to_repository_with_ext(path_to_repository_with_or_without_ext)
+  path_to_repository_with_or_without_ext =~ /\.git$/ ? path_to_repository_with_or_without_ext : path_to_repository_with_or_without_ext + '.git'
+end
+
+def do_remote(switches)
+  Net::SSH.start(switches.hostname, switches.username, :password => switches.password) do |ssh|
+    ssh.shell do |sh|
+      sh.execute "mkdir #{path_to_repository_with_ext(switches.path_to_repository)}"
+      sh.execute "cd #{path_to_repository_with_ext(switches.path_to_repository)}"
+      sh.execute "git init"
+      sh.execute "exit"
+    end
+  end
+end
+
+def do_local(switches)
+  system("git remote add origin ssh://#{switches.hostname}#{path_to_repository_with_ext(switches.path_to_repository)}")
+  system("git push origin master")
+end
+
+def main
+  switches = Switches.new do |s|
+    s.set(:u, :user, :username)
+    s.set(:p, :pass, :password)
+    s.set(:h, :host, :hostname)
+    s.set(:r, :repo, :repository, :path_to_repository)
+  end
+  do_remote(switches)
+  do_local(switches)
+end
+
+main
