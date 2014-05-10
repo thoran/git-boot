@@ -1,7 +1,8 @@
-# git-mkremote
+#!/usr/bin/env ruby
+# git-init-remote
 
 # 20100310
-# 0.1.3
+# 0.2.0
 
 # Discussion: 
 # There's a problem with using Ruby's standard URI library for SSH-style network descriptors...  
@@ -33,6 +34,7 @@
 
 # Unfortunately, I also need the SSH-style network identifier as well for the locally-issued commands.  
 
+require 'fileutils'
 require 'uri'
 
 require 'net/ssh/shell'
@@ -84,21 +86,23 @@ def do_remote(switches)
 end
 
 def do_local(switches)
-  # require 'pp'
-  # pp uri_without_colon(switches.uri)
-  # pp normalised_uri(switches.uri)
-  # pp ssh_style_uri(switches.uri)
-  # pp uri_with_colon(switches.uri)
-  # pp uri_without_protocol(switches.uri)
+  if !Dir['*'].empty?
+    system "git add ."
+    system "git commit -m '+ *"
+  else
+    FileUtils.touch('.gitignore')
+    system "git add .gitignore"
+    system "git commit -m '+ .gitignore'"
+  end
   system "git remote add origin #{ssh_style_uri(switches.uri)}"
   system "git push origin master"
 end
 
 def main
   switches = Switches.new do |s|
-    s.set(:u, :user, :username)
-    s.set(:p, :pwd, :pass, :password)
-    s.set(:uri, :url)
+    s.required!(:u, :user, :username)
+    s.required(:p, :pwd, :pass, :password)
+    s.required!(:uri, :url)
   end
   do_remote(switches)
   do_local(switches)
