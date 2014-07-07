@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # git-boot
 
-# 20140509, 10
-# 0.6.2
+# 20140509, 10, 0707
+# 0.6.3
 
 # Usage:
 # 1. With no remote specified
@@ -21,7 +21,9 @@
 # 5. ~ create_remote_github_repo(), to work with v3 of the Github API.
 # 6. + push_to_github_repo(), since it wants 'git' as the username.
 # 1/2
-# 7. ~ main, /impuri/ARGV[0]/, since the former test fails to correctly detect if a remote is specified.
+# 7. ~ main(), /impuri/ARGV[0]/, since the former test fails to correctly detect if a remote is specified.
+# 2/3
+# 8. - push_to_github_repo(), since I can (as of ImpURI 0.7) assign values to component parts.
 
 require 'File/self.basename_without_extname'
 require 'fileutils'
@@ -68,19 +70,14 @@ def push_to_remote_repo(impuri)
   system "git push origin master"
 end
 
-def push_to_github_repo(impuri)
-  ssh_style_uri = "git@#{impuri.hostname}:#{impuri.path}"
-  system "git remote add origin #{ssh_style_uri}"
-  system "git push origin master"
-end
-
 def main
   impuri = ImpURI.new(ARGV[0])
   create_local_repo
   if ARGV[0]
     if impuri.hostname == 'github.com'
       create_remote_github_repo(impuri)
-      push_to_github_repo(impuri)
+      impuri.username = 'git'
+      push_to_remote_repo(impuri)
     else 
       create_remote_repo(impuri)
       push_to_remote_repo(impuri)
