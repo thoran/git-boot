@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # git-boot
 
-# 20140509, 10, 0707
-# 0.6.3
+# 20161003
+# 0.6.4
 
 # Usage:
 # 1. With no remote specified
@@ -10,7 +10,7 @@
 # 2. With remote specified, via ssh
 # git-boot <username>:<password>@<hostname>
 # 3. With remote specified, via Github API
-# git-boot <username>:<password>@github.com
+# git-boot <username>:<password>@github.com:<username>/<project_name>
 
 # Changes since 0.5:
 # 1. Added a special section for booting to Github.
@@ -24,6 +24,8 @@
 # 7. ~ main(), /impuri/ARGV[0]/, since the former test fails to correctly detect if a remote is specified.
 # 2/3
 # 8. - push_to_github_repo(), since I can (as of ImpURI 0.7) assign values to component parts.
+# 3/4
+# 9. Updated the github usage to include path information.
 
 require 'File/self.basename_without_extname'
 require 'fileutils'
