@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # git-boot
 
-# 20161003
-# 0.6.4
+# 20181106
+# 0.6.5
 
 # Usage:
 # 1. With no remote specified
@@ -26,6 +26,8 @@
 # 8. - push_to_github_repo(), since I can (as of ImpURI 0.7) assign values to component parts.
 # 3/4
 # 9. Updated the github usage to include path information.
+# 4/5
+# 10. + Gemfile
 
 require 'File/self.basename_without_extname'
 require 'fileutils'
