@@ -1,39 +1,65 @@
 #!/usr/bin/env ruby
 # git-boot
 
-# 20181106
-# 0.6.5
+# 20200320, 22
+# 0.7.0
 
 # Usage:
 # 1. With no remote specified
-# git-boot
+#   $ cd <repo_name>
+#   $ git boot
 # 2. With remote specified, via ssh
-# git-boot <username>:<password>@<hostname>
+#   $ cd <repo_name>
+#   $ git boot <username>:<password>@<hostname>
 # 3. With remote specified, via Github API
-# git-boot <username>:<password>@github.com:<username>/<project_name>
+#   $ cd <repo_name>
+#   $ git boot <username>:<password>@github.com:<username>/<repo_name>
+# 4. With remote specified, via Github API, using OTP
+#   $ cd <repo_name>
+#   $ git boot <username>:<password>@github.com:<username>/<repo_name> --otp <otp>
 
-# Changes since 0.5:
-# 1. Added a special section for booting to Github.
-# 0/1: Updated to Github API v3.
-# 2. + require 'octokit'.
-# 3. - require 'HTTP'.
-# 4. + require 'File/self.basename_without_extname'.
-# 5. ~ create_remote_github_repo(), to work with v3 of the Github API.
-# 6. + push_to_github_repo(), since it wants 'git' as the username.
-# 1/2
-# 7. ~ main(), /impuri/ARGV[0]/, since the former test fails to correctly detect if a remote is specified.
-# 2/3
-# 8. - push_to_github_repo(), since I can (as of ImpURI 0.7) assign values to component parts.
-# 3/4
-# 9. Updated the github usage to include path information.
-# 4/5
-# 10. + Gemfile
+# Changes since 0.6:
+# -/0 Now able to handle using OAuth and OTP.
+# 1. + lib/
+# 2. + require 'File/self.collect'
+# 3. + require 'switches.rb'
+# 4. /require 'ImpURI.rbd'/require 'impuri'/ (Now using the gemified version of ImpURI.)
+# 5. + words()
+# 6. + random_word_for_authorization_note()
+# 7. ~ create_remote_github_repo(), so as to be able to handle OAuth and OTP.
+# 8. + README.md
+
+# Note:
+# 1. Presently this handles only the creation of public repos.
+
+# Todo:
+# 1. Be able to handle the creation of private repos.
+
+lib_dir = File.expand_path(File.join(__FILE__, '..', '..', 'lib'))
+$LOAD_PATH.unshift(lib_dir) unless $LOAD_PATH.include?(lib_dir)
 
 require 'File/self.basename_without_extname'
+require 'File/self.collect'
 require 'fileutils'
-require 'ImpURI.rbd/ImpURI'
+require 'impuri'
 require 'net/ssh/shell'
 require 'octokit'
+require 'switches.rb'
+
+def switches
+  @switches ||= Switches.new do |s|
+    s.set(:o, :otp, :one_time_password)
+  end
+end
+
+def words(filename = '/usr/share/dict/words')
+  @words ||= File.collect(filename){|line| line.chomp}
+end
+
+# This method enables logging in without re-using the same authorization, which would happen if git-boot were to be run twice within a given period.
+def random_word_for_authorization_note
+  words.sample
+end
 
 def path_to_repository_with_extension(impuri)
   impuri.path =~ /\.git$/ ? impuri.path : impuri.path + '.git'
@@ -62,9 +88,15 @@ def create_remote_repo(impuri)
   end
 end
 
-def create_remote_github_repo(impuri)
+def create_remote_github_repo(impuri, one_time_password = nil)
   repository_name = File.basename_without_extname(impuri.path)
   octokit_client = Octokit::Client.new(login: impuri.username, password: impuri.password)
+  if one_time_password
+    authorization = octokit_client.create_authorization(scopes: ['public_repo'], note: random_word_for_authorization_note, headers: {'X-GitHub-OTP' => one_time_password})
+  else
+    authorization = octokit_client.create_authorization(scopes: ['public_repo'], note: random_word_for_authorization_note)
+  end
+  octokit_client = Octokit::Client.new(access_token: authorization.token)
   octokit_client.create_repository(repository_name)
 end
 
@@ -75,11 +107,12 @@ def push_to_remote_repo(impuri)
 end
 
 def main
+  one_time_password = switches.one_time_password
   impuri = ImpURI.new(ARGV[0])
   create_local_repo
   if ARGV[0]
     if impuri.hostname == 'github.com'
-      create_remote_github_repo(impuri)
+      create_remote_github_repo(impuri, one_time_password)
       impuri.username = 'git'
       push_to_remote_repo(impuri)
     else 
