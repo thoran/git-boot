@@ -7,7 +7,7 @@ Initialize a local and a remote repo in one command.
 ## Installation
 
 ```shell
-$ brew install git-boot
+$ brew install thoran/tap/git-boot
 ```
 
 ## Usage
