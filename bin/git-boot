@@ -2,7 +2,7 @@
 # git-boot
 
 # 20200330
-# 0.8.0
+# 0.8.1
 
 # Usage:
 # 1. With no remote specified:
@@ -13,16 +13,16 @@
 #   $ git boot <username>:<password>@<hostname>
 # 3. With remote specified, via Github API, and with an existing access specified by name with the token being stored in a file in ~/.config/github/<token_note>.token:
 #   $ cd <repo_name>
-#   $ git boot <username>@github.com:<username>/<repo_name> --token_note <token_note>
+#   $ git boot github.com/<username>/<repo_name> --token_note <token_note>
 # 4. With remote specified, via Github API, and with at least one existing access token stored in a file in ~/.config/github/ with the first one being chosen as the default:
 #   $ cd <repo_name>
-#   $ git boot <username>@github.com:<username>/<repo_name>
+#   $ git boot github.com/<username>/<repo_name>
 # 5. With remote specified, via Github API, and with an existing access token supplied as a switch:
 #   $ cd <repo_name>
-#   $ git boot <username>:<password>@github.com:<username>/<repo_name> --access_token <access_token>
+#   $ git boot github.com/<username>/<repo_name> --access_token <access_token>
 # 6. With remote specified, via Github API, either without an existing stored or supplied token, or wanting to set up another one with a random access token note name:
 #   $ cd <repo_name>
-#   $ git boot <username>:<password>@github.com:<username>/<repo_name> --otp <otp>
+#   $ git boot <username>:<password>@github.com/<username>/<repo_name> --otp <otp>
 
 # Changes since 0.7:
 # 0 Now able to supply an access token in several different ways instead of creating new ones all the time!
@@ -30,6 +30,10 @@
 # 2. + stored_access_tokens(), ~ switches()... :n, :note, :token_note, :access_token_note
 # 3. + on_the_fly_access_token(), ~ create_remote_github_repo() --> + authorization()
 # 4. + access_token(), ~ create_remote_github_repo()
+# 1
+# 5. ~ README.md to reflect the changes in 0.8.x
+# 6. ~ Gemfile with switches.rb which was missing
+# 7. ~ bin/git-boot Usage comments to reflect the changes in README.md
 
 # Note:
 # 1. Presently this handles only the creation of public Github repos.
