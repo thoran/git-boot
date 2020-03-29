@@ -1,39 +1,41 @@
 #!/usr/bin/env ruby
 # git-boot
 
-# 20200320, 22
-# 0.7.0
+# 20200330
+# 0.8.0
 
 # Usage:
-# 1. With no remote specified
+# 1. With no remote specified:
 #   $ cd <repo_name>
 #   $ git boot
-# 2. With remote specified, via ssh
+# 2. With remote specified, via ssh:
 #   $ cd <repo_name>
 #   $ git boot <username>:<password>@<hostname>
-# 3. With remote specified, via Github API
+# 3. With remote specified, via Github API, and with an existing access specified by name with the token being stored in a file in ~/.config/github/<token_note>.token:
 #   $ cd <repo_name>
-#   $ git boot <username>:<password>@github.com:<username>/<repo_name>
-# 4. With remote specified, via Github API, using OTP
+#   $ git boot <username>@github.com:<username>/<repo_name> --token_note <token_note>
+# 4. With remote specified, via Github API, and with at least one existing access token stored in a file in ~/.config/github/ with the first one being chosen as the default:
+#   $ cd <repo_name>
+#   $ git boot <username>@github.com:<username>/<repo_name>
+# 5. With remote specified, via Github API, and with an existing access token supplied as a switch:
+#   $ cd <repo_name>
+#   $ git boot <username>:<password>@github.com:<username>/<repo_name> --access_token <access_token>
+# 6. With remote specified, via Github API, either without an existing stored or supplied token, or wanting to set up another one with a random access token note name:
 #   $ cd <repo_name>
 #   $ git boot <username>:<password>@github.com:<username>/<repo_name> --otp <otp>
 
-# Changes since 0.6:
-# -/0 Now able to handle using OAuth and OTP.
-# 1. + lib/
-# 2. + require 'File/self.collect'
-# 3. + require 'switches.rb'
-# 4. /require 'ImpURI.rbd'/require 'impuri'/ (Now using the gemified version of ImpURI.)
-# 5. + words()
-# 6. + random_word_for_authorization_note()
-# 7. ~ create_remote_github_repo(), so as to be able to handle OAuth and OTP.
-# 8. + README.md
+# Changes since 0.7:
+# 0 Now able to supply an access token in several different ways instead of creating new ones all the time!
+# 1. + supplied_access_token(), ~ switches()... :t, :token, :access_token, :personal_access_token
+# 2. + stored_access_tokens(), ~ switches()... :n, :note, :token_note, :access_token_note
+# 3. + on_the_fly_access_token(), ~ create_remote_github_repo() --> + authorization()
+# 4. + access_token(), ~ create_remote_github_repo()
 
 # Note:
-# 1. Presently this handles only the creation of public repos.
+# 1. Presently this handles only the creation of public Github repos.
 
 # Todo:
-# 1. Be able to handle the creation of private repos.
+# 1. Be able to handle the creation of private Github repos.
 
 lib_dir = File.expand_path(File.join(__FILE__, '..', '..', 'lib'))
 $LOAD_PATH.unshift(lib_dir) unless $LOAD_PATH.include?(lib_dir)
@@ -48,17 +50,61 @@ require 'switches.rb'
 
 def switches
   @switches ||= Switches.new do |s|
+    s.set(:t, :token, :access_token, :personal_access_token)
+    s.set(:n, :note, :token_note, :access_token_note)
     s.set(:o, :otp, :one_time_password)
   end
+end
+
+def impuri
+  ImpURI.new(ARGV[0])
+end
+
+def supplied_access_token
+  switches.access_token
+end
+
+def supplied_stored_access_token_filename
+  if switches.access_token_note
+    File.expand_path(File.join('~', '.config', 'github', "#{switches.access_token_note}.token"))
+  end
+end
+
+def default_stored_access_token_filename
+  Dir[File.expand_path(File.join('~', '.config', 'github', '*.token'))].first
+end
+
+def stored_access_token_filename
+  supplied_stored_access_token_filename || default_stored_access_token_filename
+end
+
+def stored_access_token
+  File.read(stored_access_token_filename).strip
 end
 
 def words(filename = '/usr/share/dict/words')
   @words ||= File.collect(filename){|line| line.chomp}
 end
 
-# This method enables logging in without re-using the same authorization, which would happen if git-boot were to be run twice within a given period.
 def random_word_for_authorization_note
   words.sample
+end
+
+def authorization
+  octokit_client = Octokit::Client.new(login: impuri.username, password: impuri.password)
+  if switches.one_time_password
+    octokit_client.create_authorization(scopes: ['public_repo'], note: random_word_for_authorization_note, headers: {'X-GitHub-OTP' => one_time_password})
+  else
+    octokit_client.create_authorization(scopes: ['public_repo'], note: random_word_for_authorization_note)
+  end
+end
+
+def on_the_fly_access_token
+  authorization.token
+end
+
+def access_token
+  supplied_access_token || stored_access_token || on_the_fly_access_token
 end
 
 def path_to_repository_with_extension(impuri)
@@ -77,7 +123,7 @@ def create_local_repo
   end
 end
 
-def create_remote_repo(impuri)
+def create_remote_repo
   Net::SSH.start(impuri.host, impuri.username, password: impuri.password) do |ssh|
     ssh.shell do |sh|
       sh.execute "mkdir #{path_to_repository_with_extension(impuri)}"
@@ -88,36 +134,30 @@ def create_remote_repo(impuri)
   end
 end
 
-def create_remote_github_repo(impuri, one_time_password = nil)
+def create_remote_github_repo
   repository_name = File.basename_without_extname(impuri.path)
-  octokit_client = Octokit::Client.new(login: impuri.username, password: impuri.password)
-  if one_time_password
-    authorization = octokit_client.create_authorization(scopes: ['public_repo'], note: random_word_for_authorization_note, headers: {'X-GitHub-OTP' => one_time_password})
-  else
-    authorization = octokit_client.create_authorization(scopes: ['public_repo'], note: random_word_for_authorization_note)
-  end
-  octokit_client = Octokit::Client.new(access_token: authorization.token)
+  octokit_client = Octokit::Client.new(access_token: access_token)
   octokit_client.create_repository(repository_name)
 end
 
-def push_to_remote_repo(impuri)
+def push_to_remote_repo(impuri = nil)
   ssh_style_uri = "#{impuri.username}@#{impuri.hostname}:#{impuri.path}"
   system "git remote add origin #{ssh_style_uri}"
   system "git push origin master"
 end
 
 def main
-  one_time_password = switches.one_time_password
-  impuri = ImpURI.new(ARGV[0])
   create_local_repo
+  switches # The switches need to be processed first in order for the URL to be left as the remaining entry in ARGV.
   if ARGV[0]
     if impuri.hostname == 'github.com'
-      create_remote_github_repo(impuri, one_time_password)
+      create_remote_github_repo
+      impuri = self.impuri
       impuri.username = 'git'
       push_to_remote_repo(impuri)
     else 
-      create_remote_repo(impuri)
-      push_to_remote_repo(impuri)
+      create_remote_repo
+      push_to_remote_repo
     end
   end
 end
