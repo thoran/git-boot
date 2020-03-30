@@ -2,7 +2,7 @@
 # git-boot
 
 # 20200330
-# 0.8.1
+# 0.8.2
 
 # Usage:
 # 1. With no remote specified:
@@ -34,6 +34,9 @@
 # 5. ~ README.md to reflect the changes in 0.8.x
 # 6. ~ Gemfile with switches.rb which was missing
 # 7. ~ bin/git-boot Usage comments to reflect the changes in README.md
+# 2
+# 8. ~ README.md for formatting.
+# 9. ~ Gemfile.lock, since it was out of date. (Perhaps could get rid of it anyway.)
 
 # Note:
 # 1. Presently this handles only the creation of public Github repos.

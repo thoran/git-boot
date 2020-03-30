@@ -44,7 +44,7 @@ $ cd <repo_name>
 $ git boot github.com/<username>/<repo_name> --access_token <access_token>
 ```
 
-# 6. With remote specified, via Github API, either without an existing stored or supplied token, or wanting to set up another one with a random access token note name
+### 6. With remote specified, via Github API, either without an existing stored or supplied token, or wanting to set up another one with a random access token note name
 ```shell
 $ cd <repo_name>
 $ git boot <username>:<password>@github.com/<username>/<repo_name> --otp <otp>
