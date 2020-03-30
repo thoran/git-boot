@@ -5,6 +5,7 @@ GEM
       public_suffix (>= 2.0.2, < 4.0)
     faraday (0.15.3)
       multipart-post (>= 1.2, < 3)
+    impuri (0.8.0)
     multipart-post (2.0.0)
     net-ssh (5.0.2)
     net-ssh-shell (0.1.0)
@@ -15,14 +16,17 @@ GEM
     sawyer (0.8.1)
       addressable (>= 2.3.5, < 2.6)
       faraday (~> 0.8, < 1.0)
+    switches.rb (0.9.15)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
+  impuri
   net-ssh
   net-ssh-shell
   octokit
+  switches.rb
 
 BUNDLED WITH
-   1.17.1
+   2.1.3
