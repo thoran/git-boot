@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # git-boot
 
-# 20200330
-# 0.8.2
+# 20210730, 20250207
+# 0.8.3
 
 # Usage:
 # 1. With no remote specified:
@@ -37,6 +37,8 @@
 # 2
 # 8. ~ README.md for formatting.
 # 9. ~ Gemfile.lock, since it was out of date. (Perhaps could get rid of it anyway.)
+# 3: `bundle update --all`
+# 10. `bundle update --all`
 
 # Note:
 # 1. Presently this handles only the creation of public Github repos.
