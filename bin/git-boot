@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # git-boot
 
-# 20210730, 20250207
-# 0.8.3
+# 20250207
+# 0.8.4
 
 # Usage:
 # 1. With no remote specified:
@@ -39,6 +39,9 @@
 # 9. ~ Gemfile.lock, since it was out of date. (Perhaps could get rid of it anyway.)
 # 3: `bundle update --all`
 # 10. `bundle update --all`
+# 3/4 (Fix removal of anything but '.git' from the end of repository names; such as '.rb'.)
+# 11. ~ create_remote_github_repo(): Use File.basename with '.git' instead of File.basename_without_extname.
+# 12. - require 'File/self.basename_without_extname' (And associated lib files.)
 
 # Note:
 # 1. Presently this handles only the creation of public Github repos.
@@ -49,7 +52,6 @@
 lib_dir = File.expand_path(File.join(__FILE__, '..', '..', 'lib'))
 $LOAD_PATH.unshift(lib_dir) unless $LOAD_PATH.include?(lib_dir)
 
-require 'File/self.basename_without_extname'
 require 'File/self.collect'
 require 'fileutils'
 require 'impuri'
@@ -144,7 +146,7 @@ def create_remote_repo
 end
 
 def create_remote_github_repo
-  repository_name = File.basename_without_extname(impuri.path)
+  repository_name = File.basename(impuri.path, '.git')
   octokit_client = Octokit::Client.new(access_token: access_token)
   octokit_client.create_repository(repository_name)
 end
