@@ -1,68 +1,25 @@
 #!/usr/bin/env ruby
 # git-boot
 
-# 20250207
-# 0.8.4
+# 20250702
+# 0.9.0
 
-# Usage:
-# 1. With no remote specified:
-#   $ cd <repo_name>
-#   $ git boot
-# 2. With remote specified, via ssh:
-#   $ cd <repo_name>
-#   $ git boot <username>:<password>@<hostname>
-# 3. With remote specified, via Github API, and with an existing access specified by name with the token being stored in a file in ~/.config/github/<token_note>.token:
-#   $ cd <repo_name>
-#   $ git boot github.com/<username>/<repo_name> --token_note <token_note>
-# 4. With remote specified, via Github API, and with at least one existing access token stored in a file in ~/.config/github/ with the first one being chosen as the default:
-#   $ cd <repo_name>
-#   $ git boot github.com/<username>/<repo_name>
-# 5. With remote specified, via Github API, and with an existing access token supplied as a switch:
-#   $ cd <repo_name>
-#   $ git boot github.com/<username>/<repo_name> --access_token <access_token>
-# 6. With remote specified, via Github API, either without an existing stored or supplied token, or wanting to set up another one with a random access token note name:
-#   $ cd <repo_name>
-#   $ git boot <username>:<password>@github.com/<username>/<repo_name> --otp <otp>
-
-# Changes since 0.7:
-# 0 Now able to supply an access token in several different ways instead of creating new ones all the time!
-# 1. + supplied_access_token(), ~ switches()... :t, :token, :access_token, :personal_access_token
-# 2. + stored_access_tokens(), ~ switches()... :n, :note, :token_note, :access_token_note
-# 3. + on_the_fly_access_token(), ~ create_remote_github_repo() --> + authorization()
-# 4. + access_token(), ~ create_remote_github_repo()
-# 1
-# 5. ~ README.md to reflect the changes in 0.8.x
-# 6. ~ Gemfile with switches.rb which was missing
-# 7. ~ bin/git-boot Usage comments to reflect the changes in README.md
-# 2
-# 8. ~ README.md for formatting.
-# 9. ~ Gemfile.lock, since it was out of date. (Perhaps could get rid of it anyway.)
-# 3: `bundle update --all`
-# 10. `bundle update --all`
-# 3/4 (Fix removal of anything but '.git' from the end of repository names; such as '.rb'.)
-# 11. ~ create_remote_github_repo(): Use File.basename with '.git' instead of File.basename_without_extname.
-# 12. - require 'File/self.basename_without_extname' (And associated lib files.)
-
-# Note:
-# 1. Presently this handles only the creation of public Github repos.
-
-# Todo:
-# 1. Be able to handle the creation of private Github repos.
-
-lib_dir = File.expand_path(File.join(__FILE__, '..', '..', 'lib'))
-$LOAD_PATH.unshift(lib_dir) unless $LOAD_PATH.include?(lib_dir)
-
-require 'File/self.collect'
 require 'fileutils'
 require 'impuri'
 require 'net/ssh/shell'
 require 'octokit'
 require 'switches.rb'
 
+lib_dir = File.expand_path(File.join(__FILE__, '..', '..', 'lib'))
+$LOAD_PATH.unshift(lib_dir) unless $LOAD_PATH.include?(lib_dir)
+
+require 'ApiCredentials'
+require 'File/self.collect'
+
 def switches
   @switches ||= Switches.new do |s|
     s.set(:t, :token, :access_token, :personal_access_token)
-    s.set(:n, :note, :token_note, :access_token_note)
+    s.set(:n, :name, :token_name, :access_token_name)
     s.set(:o, :otp, :one_time_password)
   end
 end
@@ -75,22 +32,39 @@ def supplied_access_token
   switches.access_token
 end
 
-def supplied_stored_access_token_filename
-  if switches.access_token_note
-    File.expand_path(File.join('~', '.config', 'github', "#{switches.access_token_note}.token"))
+def supplied_unencrypted_access_token_filename
+  if switches.token_name
+    File.expand_path(File.join('~', '.config', 'github', "#{switches.token_name}.token"))
   end
 end
 
-def default_stored_access_token_filename
+def default_unencrypted_access_token_filename
   Dir[File.expand_path(File.join('~', '.config', 'github', '*.token'))].first
 end
 
-def stored_access_token_filename
-  supplied_stored_access_token_filename || default_stored_access_token_filename
+def unencrypted_access_token_filename
+  supplied_unencrypted_access_token_filename || default_unencrypted_access_token_filename
 end
 
-def stored_access_token
-  File.read(stored_access_token_filename).strip
+def config_filename
+  File.expand_path(File.join('~', '.config', 'github', "config.rb"))
+end
+
+def configured_access_token_name
+  eval(File.read(config_filename))
+  ACCESS_TOKEN_NAME
+end
+
+def access_token_name
+  switches.access_token_name || configured_access_token_name
+end
+
+def encrypted_access_token
+  ApiCredentials.find("github.com-#{access_token_name}.token").token
+end
+
+def unencrypted_access_token
+  File.read(unencrypted_access_token_filename).strip
 end
 
 def words(filename = '/usr/share/dict/words')
@@ -115,7 +89,7 @@ def on_the_fly_access_token
 end
 
 def access_token
-  supplied_access_token || stored_access_token || on_the_fly_access_token
+  supplied_access_token || encrypted_access_token || unencrypted_access_token || on_the_fly_access_token
 end
 
 def path_to_repository_with_extension(impuri)
