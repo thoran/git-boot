@@ -2,7 +2,7 @@
 # git-boot
 
 # 20260806
-# 0.11.0
+# 0.11.1
 
 require 'fileutils'
 
@@ -117,10 +117,10 @@ def create_remote_github_repo
   octokit_client.create_repository(repository_name)
 end
 
-def push_to_remote_repo(impuri = nil)
+def push_to_remote_repo(impuri = self.impuri)
   ssh_style_uri = "#{impuri.username}@#{impuri.hostname}:#{impuri.path}"
   system "git remote add origin #{ssh_style_uri}"
-  system "git push origin master"
+  system "git push origin HEAD"
 end
 
 def main
