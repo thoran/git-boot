@@ -1,0 +1,34 @@
+# CHANGELOG
+
+## 20260805
+
+0.10.0: Always make the .gitignore commit the root, rename ApiCredentials to Credentials, and vendor the supporting libraries.
+
+1. + create_root_commit(): commits the .gitignore unconditionally, rather than only where there was nothing else to commit. A root commit has no parent, so `git reset --soft HEAD~1` has nothing to land on and `git rebase -i HEAD~n` fails with an unreachable-HEAD error, and rewriting one needs --orphan or --root. Booting a repo in a directory which already held files previously made real work the root, which is the case most likely to want rewriting later.
+2. + add_entries(): commits whatever was already there as a second commit rather than as the first.
+3. + entries_to_add(): the emptiness test now counts dotfiles, since Dir['*'] does not match them, and so a directory holding only, say, .gitignore and .claude read as empty.
+4. ~ create_local_repo(): now reads as init, root commit, then entries.
+5. /ApiCredentials/Credentials/, keeping the Credentials version number sequence and retiring ApiCredentials. encrypted_access_token() now calls Credentials.find rather than ApiCredentials.find.
+6. + require_gem for impuri, net/ssh, net/ssh/shell, octokit, switches.rb and sym, in place of plain requires, so that a missing gem reports itself rather than failing as a bare LoadError. net/ssh is now named explicitly, having previously been reached only by way of net/ssh/shell, despite create_remote_repo() calling Net::SSH.start directly.
+7. ~ The $LOAD_PATH.unshift of lib/ moved above the requires which depend upon it. require 'Kernel/require_gem' had been sitting above it, and so could only ever have been satisfied from elsewhere on the load path rather than from this repository's own lib/.
+8. + Vendored the supporting libraries into lib/, being _meta/, Array/, FalseClass/, Hash/, Kernel/, NilClass/, Numeric/, Object/, String/, Thoran/Kernel/ and TrueClass/, which had until now been reached only through RUBYLIB. lib/ goes from 11 files to 44.
+9. + Pd::CleartextPasswords and Pd::EncryptedPasswords, separating the two representations of the password store, each knowing how to become the other.
+10. ~ Pd::PasswordFile: reduced to reading and writing the file, the encryption having moved to Pd::CleartextPasswords and Pd::EncryptedPasswords. /DEFAULT_ENCRYPTED_FILENAME/DEFAULT_CRYPT_LOCATION/, and - the rescue of RuntimeError which printed and exited, since a library ought not to exit on its caller's behalf.
+11. + Pd::Password.reset, to empty the password list.
+12. + TODO.txt: Remove the on-the-fly authorization flow, becuase Github removed both password authentication for the API and the OAuth Authorizations API in 2020, so authorization() and on_the_fly_access_token() can no longer succeed.
+
+## 20250702
+
+0.9.0: Introduce encrypted token storage as the preferred method of storing access tokens, while maintaining backward compatibility with unencrypted access tokens.
+
+1. + require 'ApiCredentials', to allow encrypted token storage.
+2. /:note, :token_note, :access_token_note/:name, :token_name, :access_token_name/
+3. + config_filename(): returns the path to GitHub config file.
+4. + configured_access_token_name(): reads and evaluates config file to get ACCESS_TOKEN_NAME.
+5. + access_token_name(): determine which token name to use.
+6. + encrypted_access_token(): retrieve encrypted token using ApiCredentials.
+7. /supplied_stored_access_token_filename()/supplied_unencrypted_access_token_filename()/
+8. /default_stored_access_token_filename()/default_unencrypted_access_token_filename()/
+9. /stored_access_token_filename()/unencrypted_access_token_filename()/
+10. /stored_access_token()/unencrypted_access_token()/
+11. ~ access_token(): updated priority order to prefer encrypted tokens over unencrypted, but still after a supplied access token.

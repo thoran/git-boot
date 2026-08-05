@@ -1,20 +1,24 @@
 #!/usr/bin/env ruby
 # git-boot
 
-# 20250702
-# 0.9.0
+# 20260805
+# 0.10.0
 
 require 'fileutils'
-require 'impuri'
-require 'net/ssh/shell'
-require 'octokit'
-require 'switches.rb'
 
 lib_dir = File.expand_path(File.join(__FILE__, '..', '..', 'lib'))
 $LOAD_PATH.unshift(lib_dir) unless $LOAD_PATH.include?(lib_dir)
 
-require 'ApiCredentials'
+require 'Credentials'
 require 'File/self.collect'
+require 'Kernel/require_gem'
+
+require_gem 'impuri'
+require_gem 'net/ssh', gem_name: 'net-ssh'
+require_gem 'net/ssh/shell', gem_name: 'net-ssh-shell'
+require_gem 'octokit'
+require_gem 'switches.rb'
+require_gem 'sym'
 
 def switches
   @switches ||= Switches.new do |s|
@@ -60,7 +64,7 @@ def access_token_name
 end
 
 def encrypted_access_token
-  ApiCredentials.find("github.com-#{access_token_name}.token").token
+  Credentials.find("github.com-#{access_token_name}.token").token
 end
 
 def unencrypted_access_token
@@ -96,16 +100,27 @@ def path_to_repository_with_extension(impuri)
   impuri.path =~ /\.git$/ ? impuri.path : impuri.path + '.git'
 end
 
+def entries_to_add
+  Dir['*'] + Dir['.*'] - ['.', '..', '.git', '.gitignore']
+end
+
+# The root commit is made unconditionally, so as every real commit has a parent and can be amended, reset onto, or rebased in the ordinary way.  A root commit has none, and so needs --orphan or --root to rewrite.
+def create_root_commit
+  FileUtils.touch('.gitignore')
+  system "git add .gitignore"
+  system "git commit -m '+ .gitignore'"
+end
+
+def add_entries
+  return if entries_to_add.empty?
+  system "git add ."
+  system "git commit -m '+ *'"
+end
+
 def create_local_repo
   system "git init" unless File.exist?('.git')
-  if !Dir['*'].empty?
-    system "git add ."
-    system "git commit -m '+ *'"
-  else
-    FileUtils.touch('.gitignore')
-    system "git add .gitignore"
-    system "git commit -m '+ .gitignore'"
-  end
+  create_root_commit
+  add_entries
 end
 
 def create_remote_repo
@@ -140,7 +155,7 @@ def main
       impuri = self.impuri
       impuri.username = 'git'
       push_to_remote_repo(impuri)
-    else 
+    else
       create_remote_repo
       push_to_remote_repo
     end

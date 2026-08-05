@@ -6,11 +6,9 @@ require 'SimpleCSV'
 
 module Pd
   class Password
-
     @passwords = []
 
     class << self
-
       def all
         @passwords
       end
@@ -68,10 +66,13 @@ module Pd
         @passwords.reject!{|password| password.label == entry}
       end
 
+      def reset
+        @passwords = []
+      end
+
       def to_s
         @passwords.sort_by{|password| password.label}.collect{|password| password.to_s}.join("\n")
       end
-
     end # class << self
 
     attr_reader :label, :username, :password
@@ -93,6 +94,5 @@ module Pd
     def to_h
       {label: @label, username: @username, password: @password}
     end
-
   end
 end
