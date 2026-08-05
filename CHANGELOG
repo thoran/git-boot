@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 20260806
+
+0.11.1: Fix the push to a remote.
+
+1. ~ push_to_remote_repo(): the impuri parameter defaulted to nil, and the branch of main() for a remote which is not Github passes no argument, so it raised NoMethodError upon nil.username. It defaults to self.impuri now. Broken since 0.8.0 in March 2020, so every non-Github remote since.
+2. ~ push_to_remote_repo(): git push origin HEAD rather than origin master, git-boot running git init itself, so the branch is whatever init.defaultBranch said at the time rather than master by assumption.
+
 ## 20260805
 
 0.11.0: Remove the on-the-fly authorization flow, which Github made impossible in 2020.
