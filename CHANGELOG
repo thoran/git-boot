@@ -2,6 +2,16 @@
 
 ## 20260805
 
+0.11.0: Remove the on-the-fly authorization flow, which Github made impossible in 2020.
+
+1. - authorization() and on_the_fly_access_token(). Both rested upon Octokit::Client.new(login:, password:) and #create_authorization, and Github removed password authentication for the API and the OAuth Authorizations API in 2020, so neither could succeed. A token must now be supplied, stored encrypted, or stored unencrypted.
+2. - words() and random_word_for_authorization_note(), which existed only to name the authorization, and with them require File/self.collect.
+3. - The -o, --otp switch, there being no longer a request to attach a one time password to. It also read one_time_password rather than switches.one_time_password, and so would have raised NameError rather than sending the header.
+4. ~ access_token(): supplied, then encrypted, then unencrypted. The chain no longer ends in something which cannot work.
+5. ~ README.md: - the section documenting the on-the-fly flow, and - it from the list of token sources, since neither describes anything which exists now. /ApiCredentials/Credentials/ in that list too, stale since 0.10.0.
+
+## 20260805
+
 0.10.0: Always make the .gitignore commit the root, rename ApiCredentials to Credentials, and vendor the supporting libraries.
 
 1. + create_root_commit(): commits the .gitignore unconditionally, rather than only where there was nothing else to commit. A root commit has no parent, so `git reset --soft HEAD~1` has nothing to land on and `git rebase -i HEAD~n` fails with an unreachable-HEAD error, and rewriting one needs --orphan or --root. Booting a repo in a directory which already held files previously made real work the root, which is the case most likely to want rewriting later.

@@ -1,4 +1,4 @@
-# git-boot/README.md
+# git-boot
 
 ## Description
 
@@ -56,17 +56,10 @@ $ cd <repo_name>
 $ git boot github.com/<username>/<repo_name> --access_token <access_token>
 ```
 
-### 6. With remote specified, via Github API, either without an existing stored or supplied token, or wanting to set up another one with a random access token name
-```shell
-$ cd <repo_name>
-$ git boot <username>:<password>@github.com/<username>/<repo_name> --otp
-```
-
 ### Github access token sources
 1. Supplied via command line switch (--access_token)
-2. Read from a custom encrypted password store (ApiCredentials, --token_name optional)
+2. Read from a custom encrypted password store (Credentials, --token_name optional)
 3. Read, unencrypted, from the filesystem (`~/.config/github/*.token`, --token_name optional)
-4. Created on-the-fly via one-time token with a username and password supplied on the command line
 
 ## Contributing
 

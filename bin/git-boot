@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # git-boot
 
-# 20260805
-# 0.10.0
+# 20260806
+# 0.11.0
 
 require 'fileutils'
 
@@ -10,7 +10,6 @@ lib_dir = File.expand_path(File.join(__FILE__, '..', '..', 'lib'))
 $LOAD_PATH.unshift(lib_dir) unless $LOAD_PATH.include?(lib_dir)
 
 require 'Credentials'
-require 'File/self.collect'
 require 'Kernel/require_gem'
 
 require_gem 'impuri'
@@ -24,7 +23,6 @@ def switches
   @switches ||= Switches.new do |s|
     s.set(:t, :token, :access_token, :personal_access_token)
     s.set(:n, :name, :token_name, :access_token_name)
-    s.set(:o, :otp, :one_time_password)
   end
 end
 
@@ -71,29 +69,8 @@ def unencrypted_access_token
   File.read(unencrypted_access_token_filename).strip
 end
 
-def words(filename = '/usr/share/dict/words')
-  @words ||= File.collect(filename){|line| line.chomp}
-end
-
-def random_word_for_authorization_note
-  words.sample
-end
-
-def authorization
-  octokit_client = Octokit::Client.new(login: impuri.username, password: impuri.password)
-  if switches.one_time_password
-    octokit_client.create_authorization(scopes: ['public_repo'], note: random_word_for_authorization_note, headers: {'X-GitHub-OTP' => one_time_password})
-  else
-    octokit_client.create_authorization(scopes: ['public_repo'], note: random_word_for_authorization_note)
-  end
-end
-
-def on_the_fly_access_token
-  authorization.token
-end
-
 def access_token
-  supplied_access_token || encrypted_access_token || unencrypted_access_token || on_the_fly_access_token
+  supplied_access_token || encrypted_access_token || unencrypted_access_token
 end
 
 def path_to_repository_with_extension(impuri)
