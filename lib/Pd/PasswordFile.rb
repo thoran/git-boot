@@ -1,37 +1,27 @@
 # Pd/PasswordFile.rb
 # Pd::PasswordFile
 
-require 'Pd/KeyFile'
-require 'sym'
-
 module Pd
   class PasswordFile
-
-    DEFAULT_ENCRYPTED_FILENAME = '~/.pd'
+    DEFAULT_CRYPT_LOCATION = '~/.pd'
 
     class << self
-
-      include Sym
-
       def read
-        decr(File.read(encrypted_filename), KeyFile.key)
-      rescue RuntimeError => e
-        puts e
-        exit
+        File.read(crypt_location)
       end
 
-      def write(passwords)
-        File.write(encrypted_filename, encr(passwords, KeyFile.key))
-      rescue RuntimeError => e
-        puts e
-        exit
+      def write(encrypted_passwords)
+        File.write(crypt_location, encrypted_passwords)
       end
 
-      def encrypted_filename
-        File.expand_path(DEFAULT_ENCRYPTED_FILENAME)
+      def crypt_location
+        File.expand_path(DEFAULT_CRYPT_LOCATION)
       end
+      alias_method :encrypted_filename, :crypt_location
 
+      def crypt_missing_message
+        "An encrypted password file cannot be found."
+      end
     end # class << self
-
   end
 end

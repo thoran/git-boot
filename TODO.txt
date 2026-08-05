@@ -1,3 +1,4 @@
-# git-boot/TODO.txt
+# TODO.txt
 
 1. Be able to handle the creation of private Github repos.
+2. Replace the on-the-fly authorization flow. authorization() uses Octokit::Client.new(login:, password:) and #create_authorization, and Github removed both password authentication for the API and the OAuth Authorizations API in 2020, so on_the_fly_access_token() can no longer succeed. The remaining three token sources still work, so the chain effectively ends at unencrypted_access_token(). Either drop the fallback, or replace it with a device flow or a prompt to create a personal access token by hand.

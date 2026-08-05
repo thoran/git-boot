@@ -6,7 +6,6 @@ require 'json'
 module Pd
   class ConfigFile
     class << self
-
       CONFIGURATION_FILENAME = '~/.config/pdsh/config.json'
 
       def config_file_location
@@ -20,7 +19,6 @@ module Pd
           end
         )
       end
-
     end # class << self
   end
 end

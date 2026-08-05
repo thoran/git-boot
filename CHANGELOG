@@ -1,0 +1,306 @@
+# CHANGELOG
+
+## 20260805
+
+0.10.0: Always make the .gitignore commit the root, rename ApiCredentials to Credentials, and vendor the supporting libraries.
+
+1. + create_root_commit(): commits the .gitignore unconditionally, rather than only where there was nothing else to commit. A root commit has no parent, so `git reset --soft HEAD~1` has nothing to land on and `git rebase -i HEAD~n` fails with an unreachable-HEAD error, and rewriting one needs --orphan or --root. Booting a repo in a directory which already held files previously made real work the root, which is the case most likely to want rewriting later.
+2. + add_entries(): commits whatever was already there as a second commit rather than as the first.
+3. + entries_to_add(): the emptiness test now counts dotfiles, since Dir['*'] does not match them, and so a directory holding only, say, .gitignore and .claude read as empty.
+4. ~ create_local_repo(): now reads as init, root commit, then entries.
+5. /ApiCredentials/Credentials/, keeping the Credentials version number sequence and retiring ApiCredentials. encrypted_access_token() now calls Credentials.find rather than ApiCredentials.find.
+6. + require_gem for impuri, net/ssh, net/ssh/shell, octokit, switches.rb and sym, in place of plain requires, so that a missing gem reports itself rather than failing as a bare LoadError. net/ssh is now named explicitly, having previously been reached only by way of net/ssh/shell, despite create_remote_repo() calling Net::SSH.start directly.
+7. ~ The $LOAD_PATH.unshift of lib/ moved above the requires which depend upon it. require 'Kernel/require_gem' had been sitting above it, and so could only ever have been satisfied from elsewhere on the load path rather than from this repository's own lib/.
+8. + Vendored the supporting libraries into lib/, being _meta/, Array/, FalseClass/, Hash/, Kernel/, NilClass/, Numeric/, Object/, String/, Thoran/Kernel/ and TrueClass/, which had until now been reached only through RUBYLIB. lib/ goes from 11 files to 44.
+9. + Pd::CleartextPasswords and Pd::EncryptedPasswords, separating the two representations of the password store, each knowing how to become the other.
+10. ~ Pd::PasswordFile: reduced to reading and writing the file, the encryption having moved to Pd::CleartextPasswords and Pd::EncryptedPasswords. /DEFAULT_ENCRYPTED_FILENAME/DEFAULT_CRYPT_LOCATION/, and - the rescue of RuntimeError which printed and exited, since a library ought not to exit on its caller's behalf.
+11. + Pd::Password.reset, to empty the password list.
+12. + TODO.txt: Remove the on-the-fly authorization flow, becuase Github removed both password authentication for the API and the OAuth Authorizations API in 2020, so authorization() and on_the_fly_access_token() can no longer succeed.
+
+## 20250702
+
+0.9.0: Introduce encrypted token storage as the preferred method of storing access tokens, while maintaining backward compatibility with unencrypted access tokens.
+
+1. + require 'ApiCredentials', to allow encrypted token storage.
+2. /:note, :token_note, :access_token_note/:name, :token_name, :access_token_name/
+3. + config_filename(): returns the path to GitHub config file.
+4. + configured_access_token_name(): reads and evaluates config file to get ACCESS_TOKEN_NAME.
+5. + access_token_name(): determine which token name to use.
+6. + encrypted_access_token(): retrieve encrypted token using ApiCredentials.
+7. /supplied_stored_access_token_filename()/supplied_unencrypted_access_token_filename()/
+8. /default_stored_access_token_filename()/default_unencrypted_access_token_filename()/
+9. /stored_access_token_filename()/unencrypted_access_token_filename()/
+10. /stored_access_token()/unencrypted_access_token()/
+11. ~ access_token(): updated priority order to prefer encrypted tokens over unencrypted, but still after a supplied access token.
+
+
+## 20250207
+
+0.8.4: Fix removal of anything but '.git' from the end of repository names; such as '.rb'.
+
+1. ~ create_remote_github_repo(): File.basename with '.git' in place of File.basename_without_extname.
+2. - require 'File/self.basename_without_extname', and its lib files.
+
+
+## 20250207
+
+0.8.3: `bundle update --all`
+
+1. `bundle update --all`
+
+
+## 20200330
+
+0.8.2: ~ README.md, formatting; ~ Gemfile.lock, since it was out of date.
+
+1. ~ README.md, for formatting.
+2. ~ Gemfile.lock, which was out of date.
+
+
+## 20200330
+
+0.8.1: ~ README.md to reflect the changes in 0.8.x; ~ Gemfile: + switches.rb, which was missing.
+
+1. ~ README.md, to reflect the changes in 0.8.x.
+2. ~ Gemfile: + switches.rb, which was missing.
+3. ~ bin/git-boot: the Usage comments, to follow README.md.
+
+
+## 20200330
+
+0.8.0: Now able to supply an access token in several different ways instead of creating new ones all the time!
+
+1. + supplied_access_token(), and ~ switches(): :t, :token, :access_token, :personal_access_token.
+2. + stored_access_tokens(), and ~ switches(): :n, :note, :token_note, :access_token_note.
+3. + on_the_fly_access_token(), and ~ create_remote_github_repo(): + authorization().
+4. + access_token(), and ~ create_remote_github_repo().
+
+
+## 20200322
+
+0.7.0: Now able to handle using OAuth and OTP.
+
+1. + lib/
+2. + require 'File/self.collect'
+3. + require 'switches.rb'
+4. /require 'ImpURI.rbd'/require 'impuri'/ (Now using the gemified version of ImpURI.)
+5. + words()
+6. + random_word_for_authorization_note()
+7. ~ create_remote_github_repo(), so as to be able to handle OAuth and OTP.
+8. + README.md
+
+
+## 20181106
+
+0.6.5: + Gemfile
+
+1. + Gemfile
+
+
+## 20161003
+
+0.6.4: Updated the github usage to include path information.
+
+1. ~ bin/git-boot: the github usage, to include path information.
+
+
+## 20140707
+
+0.6.3: - push_to_github_repo(), since I can (as of ImpURI 0.7) assign values to component parts.
+
+1. - push_to_github_repo(), ImpURI 0.7 allowing values to be assigned to the component parts.
+
+
+## 20140510
+
+0.6.2: ~ main, /impuri/ARGV[0]/, since the former test fails to correctly detect if a remote is specified.
+
+1. ~ main(): /impuri/ARGV[0]/, the former failing to detect correctly whether a remote was specified.
+## 20140510
+
+0.6.1: Updated to Github API v3.
+
+1. + require 'octokit'.
+2. - require 'HTTP'.
+3. + require 'File/self.basename_without_extname'.
+4. ~ create_remote_github_repo(), to work with v3 of the Github API.
+5. + push_to_github_repo(), since it wants 'git' as the username.
+
+
+## 20120403
+
+0.6.0: Boot to a Github repository over its API, as well as to a host over SSH.
+
+1. + require 'HTTP'
+2. + create_remote_github_repo()
+3. ~ path_to_repository_with_extension()
+4. ~ create_local_repo()
+5. ~ create_remote_repo()
+6. ~ push_to_remote_repo()
+7. ~ main()
+
+
+## 20111011
+
+0.5.2: Require ImpURI from its namespaced path.
+
+1. - require 'ImpURI'
+2. + require 'ImpURI.rbd/ImpURI'
+
+
+## 20110205
+
+0.5.1: Take the remote as an argument rather than through Switches, and name the methods for what they make.
+
+1. - require 'Switches'
+2. - require 'uri'
+3. - do_local_repo()
+4. - do_remote_repo()
+5. - do_push_to_remote()
+6. - username()
+7. - u()
+8. - user()
+9. - password()
+10. - pwd()
+11. - pass()
+12. - hostname()
+13. - h()
+14. - host()
+15. - path()
+16. + create_local_repo()
+17. + create_remote_repo()
+18. + push_to_remote_repo()
+19. ~ path_to_repository_with_extension()
+20. ~ main()
+
+
+## 20110205
+
+0.5.0: Read the descriptor's parts through named accessors.
+
+1. + username()
+2. + u()
+3. + user()
+4. + password()
+5. + pwd()
+6. + pass()
+7. + hostname()
+8. + h()
+9. + host()
+10. + path()
+11. ~ do_local_repo()
+12. ~ do_remote_repo()
+13. ~ do_push_to_remote()
+14. ~ main()
+
+
+## 20110204
+
+0.4.0: Parse the descriptor with ImpURI, retiring the hand-rolled URI handling.
+
+1. + require 'ImpURI'
+2. - normalised_uri()
+3. - uri_with_protocol()
+4. - uri_without_colon()
+5. - uri_with_colon()
+6. - uri_without_protocol()
+7. - ssh_style_uri()
+8. ~ path_to_repository_with_extension()
+9. ~ do_local_repo()
+10. ~ do_remote_repo()
+11. ~ do_push_to_remote()
+
+
+## 20100310
+
+0.3.0: Rename to git-boot, and name the methods for the repositories they act on.
+
+1. /init-git/git-boot/
+2. - do_remote()
+3. - do_local()
+4. - do_push()
+5. + do_remote_repo()
+6. + do_local_repo()
+7. + do_push_to_remote()
+8. ~ main()
+
+
+## 20100310
+
+0.2.1: Rename to init-git, and push to the remote in a step of its own.
+
+1. /git-init-remote/init-git/
+2. + do_push()
+3. ~ do_local()
+4. ~ main()
+
+
+## 20100310
+
+0.2.0: Rename to git-init-remote, and make the local repository's directory.
+
+1. /git-mkremote/git-init-remote/
+2. + require 'fileutils'
+3. ~ do_local()
+4. ~ main()
+
+
+## 20100310
+
+0.1.3: Handle SSH-style descriptors, which URI will not parse as they stand.
+
+1. - require 'pp'
+2. + uri_with_colon()
+3. + uri_without_protocol()
+4. + ssh_style_uri()
+5. ~ do_local()
+6. ~ main()
+
+
+## 20100310
+
+0.1.2: Normalise the descriptor before parsing, and spell extension in full.
+
+1. - require 'fileutils'
+2. + require 'pp'
+3. - path_to_repository_with_ext()
+4. + path_to_repository_with_extension()
+5. + normalised_uri()
+6. + uri_without_colon()
+7. ~ do_remote()
+8. ~ do_local()
+9. ~ main()
+
+
+## 20100310
+
+0.1.1: Add a protocol to the descriptor where it has none, so that URI can parse it.
+
+1. + uri_with_protocol()
+2. ~ path_to_repository_with_ext()
+3. ~ do_remote()
+4. ~ do_local()
+
+
+## 20100310
+
+0.1.0: Parse the remote descriptor with URI.
+
+1. + require 'uri'
+2. ~ path_to_repository_with_ext()
+3. ~ do_remote()
+4. ~ do_local()
+5. ~ main()
+
+
+## 20100310
+
+0.0.0: Make a bare repository on a remote host over SSH, add it as origin and push to it.
+
+1. + require 'net/ssh/shell'
+2. + require 'fileutils'
+3. + require 'Switches'
+4. + path_to_repository_with_ext()
+5. + do_remote()
+6. + do_local()
+7. + main()

@@ -6,7 +6,6 @@ require 'Pd/ConfigFile'
 module Pd
   class KeyFile
     class << self
-
       DEFAULT_KEY_FILENAME = '~/.config/pdsh/key.txt'
 
       def volume_names
@@ -59,7 +58,6 @@ module Pd
           raise RuntimeError, key_missing_message
         end
       end
-
     end # class << self
   end
 end
