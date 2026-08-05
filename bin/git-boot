@@ -2,7 +2,7 @@
 # git-boot
 
 # 20260806
-# 0.11.1
+# 0.11.2
 
 require 'fileutils'
 
@@ -53,6 +53,7 @@ def config_filename
 end
 
 def configured_access_token_name
+  return nil unless File.exist?(config_filename)
   eval(File.read(config_filename))
   ACCESS_TOKEN_NAME
 end
@@ -61,16 +62,36 @@ def access_token_name
   switches.access_token_name || configured_access_token_name
 end
 
+def encrypted_access_token_label
+  "github.com-#{access_token_name}.token"
+end
+
+# Three states, and they are not the same. The store is unreachable when the
+# key is not to hand, which is ordinary, so that falls through to the next
+# source. A named credential which the store does not hold is a
+# misconfiguration, naming it being a statement of intent, so that stops.
 def encrypted_access_token
-  Credentials.find("github.com-#{access_token_name}.token").token
+  return nil unless access_token_name
+  begin
+    credentials = Credentials.find(encrypted_access_token_label)
+  rescue SystemCallError
+    return nil
+  end
+  begin
+    credentials.token
+  rescue NoMethodError
+    abort "No such credential: #{encrypted_access_token_label}."
+  end
 end
 
 def unencrypted_access_token
+  return nil unless unencrypted_access_token_filename
   File.read(unencrypted_access_token_filename).strip
 end
 
 def access_token
-  supplied_access_token || encrypted_access_token || unencrypted_access_token
+  supplied_access_token || encrypted_access_token || unencrypted_access_token ||
+    abort('No access token. Supply one with --token, name one with --name, or place one in ~/.config/github/.')
 end
 
 def path_to_repository_with_extension(impuri)

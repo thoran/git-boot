@@ -2,6 +2,15 @@
 
 ## 20260806
 
+0.11.2: Let the access token chain fall through absence, and stop upon misconfiguration.
+
+1. ~ access_token(): the chain was written as though each source signalled absence by returning nil, and two of the three did not. unencrypted_access_token() raised TypeError where there was no .token file at all, since File.read(nil), and encrypted_access_token() raised where the credential was not found, Credentials.find returning an object whose credentials are nil. || falls through nil and not exceptions, so either aborted the chain rather than passing to the next source.
+2. + configured_access_token_name(), unencrypted_access_token() and encrypted_access_token(): a guard apiece, so that a source which is not configured returns nil and is fallen past, while one which is configured and unusable still raises with its own error. Rescuing instead would report a corrupt store as no token found, which is the wrong diagnosis.
+3. ~ encrypted_access_token(): three states told apart. The store being unreachable, the key not being to hand, is ordinary and falls through. A named credential the store does not hold stops, naming it being a statement of intent.
+4. + access_token(): a message where no source yields a token, rather than passing nil to Octokit and having Github answer 401.
+
+## 20260806
+
 0.11.1: Fix the push to a remote.
 
 1. ~ push_to_remote_repo(): the impuri parameter defaulted to nil, and the branch of main() for a remote which is not Github passes no argument, so it raised NoMethodError upon nil.username. It defaults to self.impuri now. Broken since 0.8.0 in March 2020, so every non-Github remote since.
