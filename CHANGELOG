@@ -2,6 +2,12 @@
 
 ## 20260806
 
+0.11.3: Fill out the .gitignore.
+
+1. ~ .gitignore: from the single .DS_Store line to the whole set for Ruby, being gem and build products, Bundler, RDoc, YARD, editor files, Ruby version managers, test artefacts and .claude. It now matches the one in impuri. Nothing unwanted had reached the repository, .DS_Store having been the one line which mattered and .claude not having existed while any of this history was written, but the rules only ever protect what follows them.
+
+## 20260806
+
 0.11.2: Let the access token chain fall through absence, and stop upon misconfiguration.
 
 1. ~ access_token(): the chain was written as though each source signalled absence by returning nil, and two of the three did not. unencrypted_access_token() raised TypeError where there was no .token file at all, since File.read(nil), and encrypted_access_token() raised where the credential was not found, Credentials.find returning an object whose credentials are nil. || falls through nil and not exceptions, so either aborted the chain rather than passing to the next source.
