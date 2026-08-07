@@ -2,6 +2,16 @@
 
 ## 20260808
 
+0.14.2: Require faraday-retry, so as octokit stops asking for it.
+
+1. + require_gem 'faraday/retry', ahead of octokit rather than beside it. Octokit builds its middleware stack upon being required, so retrying is only in the stack where the middleware is registered by then, and requiring it afterwards is too late to be of use or to quieten anything.
+2. Faraday moved the retry middleware out to a gem of its own at 2.0, and octokit 10 still asks for it, so every run printed a line saying to install it. Retrying is worth having for its own sake as well: a repository creation is one call to an API which answers 502 from time to time, and it had no retry at all.
+3. + A test that git-boot says nothing on behalf of its dependencies, neither the retry notice nor a Ruby warning. With 0.14.1's it makes the pair: what git-boot prints should be git-boot's.
+4. What was five lines of output for a run which failed is now the one line which says why.
+5. ~ Gemfile: + faraday-retry, so as it names what bin/git-boot requires.
+
+## 20260808
+
 0.14.1: Read the access token config once.
 
 1. ~ configured_access_token_name: memoised, with the reading moved out to access_token_name_from_config. The config file defines constants, so reading it a second time warns once apiece, and access_token_name is asked for twice: once to build the label for the encrypted store, and again to decide whether there is a name at all.
