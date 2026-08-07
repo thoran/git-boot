@@ -56,6 +56,13 @@ $ cd <repo_name>
 $ git boot github.com/<username>/<repo_name> --access_token <access_token>
 ```
 
+### 6. In a repository which already exists
+A directory which already has commits is left alone locally, so this does the remote half only: it creates the repository and pushes what is already there, tags included.  Refused where a remote named origin is already present, before anything is created on the far end.
+```shell
+$ cd <repo_name>
+$ git boot github.com/<username>/<repo_name>
+```
+
 ### Github access token sources
 1. Supplied via command line switch (--access_token)
 2. Read from a custom encrypted password store (Credentials, --token_name optional)

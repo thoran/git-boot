@@ -2,7 +2,7 @@
 # git-boot
 
 # 20260807
-# 0.12.0
+# 0.13.0
 
 require 'fileutils'
 
@@ -115,7 +115,13 @@ def add_entries
   system "git commit -m '+ *'"
 end
 
+def has_commits?
+  system('git', 'rev-parse', '--quiet', '--verify', 'HEAD', out: File::NULL, err: File::NULL)
+end
+
+# What distinguishes a repository to be booted is that it has no commits, not that it has no .git: a directory which has been git init'd and left alone still wants the whole treatment.  A repository with history has its own root commit already, whatever that is, and grafting another onto the tip neither gives it a parent nor is wanted.
 def create_local_repo
+  return if has_commits?
   system "git init" unless File.exist?('.git')
   create_root_commit
   add_entries
@@ -138,16 +144,28 @@ def create_remote_github_repo
   octokit_client.create_repository(repository_name)
 end
 
+def origin_url
+  url = `git remote get-url origin 2>/dev/null`.strip
+  url.empty? ? nil : url
+end
+
+# Checked before anything remote is made, rather than when the push fails, so as a refusal leaves neither an empty repository on the far end nor a remote pointing somewhere unintended.  How many remotes a repository keeps is its own business; what cannot be allowed is pushing to one which was not named here.
+def ensure_origin_is_free
+  return unless origin_url
+  abort("This repository already has a remote named origin: #{origin_url}. Remove or rename it, or add the second remote by hand.")
+end
+
 def push_to_remote_repo(impuri = self.impuri)
   ssh_style_uri = "#{impuri.username}@#{impuri.hostname}:#{impuri.path}"
-  system "git remote add origin #{ssh_style_uri}"
-  system "git push origin HEAD"
+  system('git', 'remote', 'add', 'origin', ssh_style_uri)
+  system('git', 'push', '--follow-tags', 'origin', 'HEAD')
 end
 
 def main
   create_local_repo
   switches # The switches need to be processed first in order for the URL to be left as the remaining entry in ARGV.
   if ARGV[0]
+    ensure_origin_is_free
     if impuri.hostname == 'github.com'
       create_remote_github_repo
       impuri = self.impuri

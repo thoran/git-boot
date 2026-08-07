@@ -2,6 +2,18 @@
 
 ## 20260807
 
+0.13.0: Work in a repository which already exists.
+
+1. + has_commits?, and create_local_repo returns upon it. What is booted is a directory with no commits, which is not the same as one with no .git: git init was already conditional, but create_root_commit was not, so in a repository with history and no .gitignore it made a commit named '+ .gitignore' upon the tip. That commit is not a root commit, has a parent, and was never asked for. A directory which has been git init'd and left alone still has no commits and so still gets the whole treatment, which is the case the guard has to leave alone.
+2. + ensure_origin_is_free, called before anything remote is made. push_to_remote_repo ran git remote add origin and then pushed to origin without looking at whether the add had succeeded, so where origin was already there the add failed and the push went to whatever origin had been pointing at all along. Asking for a repository at one address and quietly sending the code to another is the worst of what was here.
+3. + The refusal precedes create_remote_github_repo rather than following it, so as nothing is left half done: no empty repository on the far end, and no remote pointing anywhere it was not told to. How many remotes a repository keeps is its own business, git being distributed; the only thing which cannot be allowed is pushing to one which was not named on the command line.
+4. ~ push_to_remote_repo: git push --follow-tags, in place of git push. A repository being booted has no tags to lose, but one which already exists generally does, and leaving them behind makes the remote a poorer copy than the local.
+5. ~ push_to_remote_repo: system with an argument list, in place of a string with a URI interpolated into it.
+6. + Six tests over the two new refusals and the case they serve: no commit added where there is history, untracked files left untracked, no .gitignore conjured, the refusal naming what origin points at, the existing remote undisturbed by it, and no refusal where no remote was asked for at all.
+7. + README case 6, for a repository which already exists.
+
+## 20260807
+
 0.12.0: + test/git-boot_test.rb
 
 1. + test/git-boot_test.rb, the first tests of any kind here. git-boot is run as a subprocess in a directory made for the purpose, and what is asserted is the repository it leaves behind rather than anything it printed. With no argument it does the local half and stops, so nothing wants a network, a remote, or a credential, and the remote paths are left uncovered rather than mocked.
