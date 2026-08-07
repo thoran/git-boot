@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # git-boot
 
-# 20260807
-# 0.13.0
+# 20260808
+# 0.14.0
 
 require 'fileutils'
 
@@ -23,6 +23,7 @@ def switches
   @switches ||= Switches.new do |s|
     s.set(:t, :token, :access_token, :personal_access_token)
     s.set(:n, :name, :token_name, :access_token_name)
+    s.boolean(:p, :private)
   end
 end
 
@@ -138,10 +139,11 @@ def create_remote_repo
   end
 end
 
+# An unsupplied boolean switch reads as nil rather than false, and the API wants the field either way, so it is made a boolean here rather than passed as it comes.  Creating a private repository needs a token with the whole repo scope; public_repo alone is refused.
 def create_remote_github_repo
   repository_name = File.basename(impuri.path, '.git')
   octokit_client = Octokit::Client.new(access_token: access_token)
-  octokit_client.create_repository(repository_name)
+  octokit_client.create_repository(repository_name, private: !!switches.private?)
 end
 
 def origin_url

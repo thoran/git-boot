@@ -63,6 +63,13 @@ $ cd <repo_name>
 $ git boot github.com/<username>/<repo_name>
 ```
 
+### 7. Private, via the Github API
+```shell
+$ cd <repo_name>
+$ git boot github.com/<username>/<repo_name> --private
+```
+The access token must carry the whole `repo` scope; `public_repo` alone is refused by the API.  Has no bearing on the ssh form, a bare repository being as private as the machine it sits on.
+
 ### Github access token sources
 1. Supplied via command line switch (--access_token)
 2. Read from a custom encrypted password store (Credentials, --token_name optional)
