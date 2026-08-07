@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # git-boot
 
-# 20260806
-# 0.11.3
+# 20260807
+# 0.12.0
 
 require 'fileutils'
 
