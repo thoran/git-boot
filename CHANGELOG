@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 20260807
+
+0.12.0: + test/git-boot_test.rb
+
+1. + test/git-boot_test.rb, the first tests of any kind here. git-boot is run as a subprocess in a directory made for the purpose, and what is asserted is the repository it leaves behind rather than anything it printed. With no argument it does the local half and stops, so nothing wants a network, a remote, or a credential, and the remote paths are left uncovered rather than mocked.
+2. + Seven checks over the five states a directory can be in when git-boot is run in it: empty, holding files, already a repository, already a repository holding files, and holding nothing but dotfiles. The root commit is asserted to be parentless and to come first, that being the whole reason it is made unconditionally.
+3. + The dotfile case is the one which has actually bitten. entries_to_add reads Dir['.*'], which carries '.', '..' and '.git' along with anything wanted, and a .gitignore already in the directory must not earn a second commit of its own, it being the root commit's own file.
+4. Nothing was found broken. What 0.11.0 to 0.11.3 arrived at is right in all five states, and this holds it there.
+
 ## 20260806
 
 0.11.3: Fill out the .gitignore.
