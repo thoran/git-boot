@@ -2,7 +2,7 @@
 # git-boot
 
 # 20260808
-# 0.14.2
+# 0.14.3
 
 require 'fileutils'
 
@@ -21,6 +21,9 @@ require_gem 'net/ssh/shell', gem_name: 'net-ssh-shell'
 require_gem 'octokit'
 require_gem 'switches.rb'
 require_gem 'sym'
+
+# require_gem installs what is absent, and an impuri which is present but too old is neither absent nor usable.  Said plainly here rather than left to surface as a NoMethodError from the middle of a push.
+abort('git-boot wants impuri 0.12.0 or later, for ImpURI#to_ssh.') unless ImpURI.method_defined?(:to_ssh)
 
 def switches
   @switches ||= Switches.new do |s|
@@ -166,9 +169,20 @@ def ensure_origin_is_free
   abort("This repository already has a remote named origin: #{origin_url}. Remove or rename it, or add the second remote by hand.")
 end
 
-def push_to_remote_repo(impuri = self.impuri)
-  ssh_style_uri = "#{impuri.username}@#{impuri.hostname}:#{impuri.path}"
-  system('git', 'remote', 'add', 'origin', ssh_style_uri)
+def github?
+  impuri.hostname == 'github.com'
+end
+
+# ImpURI#impuri returns a fresh object apiece, so what is mutated here is nobody else's.  Github wants the git user whatever was named on the command line, and the repository is made with a .git extension, so it is pushed to with one: the two had been left to differ, and an ssh repository created as thing.git was then pushed to as thing.
+def remote_uri
+  remote = impuri
+  remote.username = 'git' if github?
+  remote.path = path_to_repository_with_extension(remote)
+  remote.to_ssh
+end
+
+def push_to_remote_repo(uri = remote_uri)
+  system('git', 'remote', 'add', 'origin', uri)
   system('git', 'push', '--follow-tags', 'origin', 'HEAD')
 end
 
@@ -177,15 +191,8 @@ def main
   switches # The switches need to be processed first in order for the URL to be left as the remaining entry in ARGV.
   if ARGV[0]
     ensure_origin_is_free
-    if impuri.hostname == 'github.com'
-      create_remote_github_repo
-      impuri = self.impuri
-      impuri.username = 'git'
-      push_to_remote_repo(impuri)
-    else
-      create_remote_repo
-      push_to_remote_repo
-    end
+    github? ? create_remote_github_repo : create_remote_repo
+    push_to_remote_repo
   end
 end
 

@@ -2,6 +2,16 @@
 
 ## 20260808
 
+0.14.3: Build the remote descriptor with ImpURI#to_ssh.
+
+1. + remote_uri, and push_to_remote_repo takes the descriptor rather than building it. What was there interpolated "#{username}@#{hostname}:#{path}", and a URI path is not an scp path: after a colon a leading slash says the path begins at the root, whereas in a URI it merely separates the path from the hostname. So github.com/thoran/lineage gave git@github.com:/thoran/lineage, which is what the origin of every repository booted here has said. Github forgives it, the path there being an owner and a repository rather than a place upon a disk.
+2. ~ The path carries its .git extension into the descriptor, as the repository created always had. create_remote_repo makes thing.git and push_to_remote_repo was pushing to thing, so over ssh a repository was made in one place and pushed to in another, and only a path typed with the extension already upon it worked at all.
+3. ~ main: the two branches differed in which of create_remote_github_repo and create_remote_repo they called and in nothing else, so the rest is no longer written out twice. + github?, which both of them and remote_uri ask.
+4. + A guard upon ImpURI#to_ssh being there. require_gem installs what is absent, and an impuri which is present but too old is neither absent nor usable, so it is said plainly rather than left to surface as a NoMethodError from the middle of a push. Wants impuri 0.12.0.
+5. The descriptor is built in impuri now, where nine tests cover it, rather than here, where the remote half is covered by none. Which is the better reason for the move than the leading slash was.
+
+## 20260808
+
 0.14.2: Require faraday-retry, so as octokit stops asking for it.
 
 1. + require_gem 'faraday/retry', ahead of octokit rather than beside it. Octokit builds its middleware stack upon being required, so retrying is only in the stack where the middleware is registered by then, and requiring it afterwards is too late to be of use or to quieten anything.
