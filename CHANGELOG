@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 20260808
+
+0.14.0: + --private, for the Github repositories which should not be public.
+
+1. + --private, as -p, passed through to create_repository. TODO item 1, which has been sitting there since the Github path was written.
+2. + The switch is declared with boolean rather than set, so as it takes no argument and does not swallow the URI which follows it. An unsupplied boolean reads as nil rather than false and the API wants the field either way, so it is made a boolean at the call rather than passed as it comes.
+3. Bears upon the Github path alone. A bare repository made over ssh is as private as the machine it sits on, and there is nothing there to ask for.
+4. + Three tests, of what can be tested without the API and a token: that --private and -p are each taken as a switch rather than as the repository to create, and that neither swallows the URI which follows. An undeclared switch is left in ARGV, and ARGV[0] is read as the repository to create, so a switch which is not properly declared would have git-boot try to create a repository called --private.
+5. The access token must carry the whole repo scope, public_repo alone being refused for a private repository. Noted in the README, since the failure is a 403 from the API rather than anything git-boot can see coming.
+
 ## 20260807
 
 0.13.0: Work in a repository which already exists.

@@ -1,7 +1,7 @@
 # test/git-boot_test.rb
 
-# 20260807
-# 0.13.0
+# 20260808
+# 0.14.0
 
 # git-boot is run as a subprocess in a directory made for the purpose, and
 # what is asserted is the state of the repository it leaves behind rather than
@@ -93,6 +93,39 @@ describe 'git-boot in a repository which already has commits' do
   it 'creates no .gitignore where there was none' do
     in_repo(committed: true) do |_status, _output|
       _(File.exist?('.gitignore')).must_equal false
+    end
+  end
+end
+
+# Whether the repository is made private cannot be asserted without the API and
+# a token, so what is tested is that the switch is consumed: an undeclared
+# switch is left in ARGV, and ARGV[0] is read as the repository to create.
+describe 'git-boot --private' do
+  it 'is taken as a switch rather than as the repository to create' do
+    in_repo(arguments: %w{--private}) do |status, _output|
+      _(status).must_equal 0
+      _(commits).must_equal ['+ .gitignore']
+      _(`git remote`.strip).must_be_empty
+    end
+  end
+
+  it 'is taken as a switch in its short form too' do
+    in_repo(arguments: %w{-p}) do |status, _output|
+      _(status).must_equal 0
+      _(commits).must_equal ['+ .gitignore']
+    end
+  end
+
+  # It stands before the URI without swallowing it, which is what a switch
+  # taking an argument would do.
+  it 'leaves the repository argument alone' do
+    in_repo(
+      committed: true,
+      origin: 'git@example.com:someone/other.git',
+      arguments: %w{--private github.com/thoran/whatever}
+    ) do |status, output|
+      _(status).wont_equal 0
+      _(output).must_match(/already has a remote named origin/)
     end
   end
 end

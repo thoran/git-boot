@@ -1,5 +1,5 @@
 # TODO.txt
 
-1. Be able to handle the creation of private Github repos.
+1. Be able to handle the creation of private Github repos.  Done as of 0.14.0.
 2. The remote half is not covered by the tests, needing a network and a credential apiece.  create_remote_github_repo, create_remote_repo and the push are all unexercised; what is tested stops at the refusal which precedes them.
 3. create_remote_repo builds its ssh commands by interpolating into strings, as push_to_remote_repo did until 0.13.0.  The same treatment is wanted, though Net::SSH::Shell takes a command line rather than an argument list, so it wants shellescape rather than an array.
