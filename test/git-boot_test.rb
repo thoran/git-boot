@@ -1,7 +1,7 @@
 # test/git-boot_test.rb
 
 # 20260808
-# 0.14.1
+# 0.14.2
 
 # git-boot is run as a subprocess in a directory made for the purpose, and
 # what is asserted is the state of the repository it leaves behind rather than
@@ -157,6 +157,15 @@ describe 'git-boot reading the access token config' do
   it 'reads the config file once, whatever it is asked' do
     in_repo(committed: true, home: home_with_config, arguments: %w{github.com/thoran/whatever}) do |_status, output|
       _(output).wont_match(/already initialized constant/)
+    end
+  end
+
+  # Whatever git-boot says should be its own. A notice from a dependency is
+  # noise on every run, and it was four such lines which hid the one above.
+  it 'says nothing on behalf of its dependencies' do
+    in_repo(committed: true, home: home_with_config, arguments: %w{github.com/thoran/whatever}) do |_status, output|
+      _(output).wont_match(/retry middleware/)
+      _(output).wont_match(/warning:/)
     end
   end
 end

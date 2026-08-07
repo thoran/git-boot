@@ -2,7 +2,7 @@
 # git-boot
 
 # 20260808
-# 0.14.1
+# 0.14.2
 
 require 'fileutils'
 
@@ -11,6 +11,9 @@ $LOAD_PATH.unshift(lib_dir) unless $LOAD_PATH.include?(lib_dir)
 
 require 'Credentials'
 require 'Kernel/require_gem'
+
+# Ahead of octokit rather than beside it: octokit builds its middleware stack upon being required, and retrying is only in the stack if the middleware is registered by then.  Faraday moved it out to a gem of its own at 2.0, and octokit says so upon every run where it is absent.
+require_gem 'faraday/retry', gem_name: 'faraday-retry'
 
 require_gem 'impuri'
 require_gem 'net/ssh', gem_name: 'net-ssh'
