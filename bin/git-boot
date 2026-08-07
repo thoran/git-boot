@@ -2,7 +2,7 @@
 # git-boot
 
 # 20260808
-# 0.14.0
+# 0.14.1
 
 require 'fileutils'
 
@@ -53,7 +53,13 @@ def config_filename
   File.expand_path(File.join('~', '.config', 'github', "config.rb"))
 end
 
+# The config file defines constants, so reading it twice is a redefinition warning apiece, and access_token_name is asked for more than once: once to build the label and again to decide whether there is a name at all.  Memoised upon whether it has been read rather than upon what it gave, since a config file which is not there yields nil legitimately and ||= would read it again each time.
 def configured_access_token_name
+  return @configured_access_token_name if defined?(@configured_access_token_name)
+  @configured_access_token_name = access_token_name_from_config
+end
+
+def access_token_name_from_config
   return nil unless File.exist?(config_filename)
   eval(File.read(config_filename))
   ACCESS_TOKEN_NAME

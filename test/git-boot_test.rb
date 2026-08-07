@@ -1,7 +1,7 @@
 # test/git-boot_test.rb
 
 # 20260808
-# 0.14.0
+# 0.14.1
 
 # git-boot is run as a subprocess in a directory made for the purpose, and
 # what is asserted is the state of the repository it leaves behind rather than
@@ -15,17 +15,26 @@ require 'tmpdir'
 
 BIN = File.expand_path('../bin/git-boot', __dir__)
 
-def in_repo(files: [], initialised: false, committed: false, origin: nil, arguments: [])
+def in_repo(files: [], initialised: false, committed: false, origin: nil, arguments: [], home: nil)
   Dir.mktmpdir do |directory|
     Dir.chdir(directory) do
       system('git', 'init', '--quiet') if initialised || committed || origin
       files.each{|name| FileUtils.touch(name)}
       make_history if committed
       system('git', 'remote', 'add', 'origin', origin) if origin
-      stdout, stderr, status = Open3.capture3(BIN, *arguments)
+      stdout, stderr, status = Open3.capture3(home ? {'HOME' => home} : {}, BIN, *arguments)
       yield status.exitstatus, stdout + stderr
     end
   end
+end
+
+# A HOME of its own, holding the config file and no token beside it, so as the
+# chain is walked to its end without any of this reading the real one.
+def home_with_config
+  home = Dir.mktmpdir
+  FileUtils.mkdir_p(File.join(home, '.config', 'github'))
+  File.write(File.join(home, '.config', 'github', 'config.rb'), "ACCESS_TOKEN_NAME = 'whichever'\n")
+  home
 end
 
 def make_history
@@ -126,6 +135,28 @@ describe 'git-boot --private' do
     ) do |status, output|
       _(status).wont_equal 0
       _(output).must_match(/already has a remote named origin/)
+    end
+  end
+end
+
+# The config file names the token but does not hold it, so with no token beside
+# it the chain runs to its end and stops before anything is created.  That is
+# the one path which reads the config file, and so the one which can say how
+# often it is read.
+describe 'git-boot reading the access token config' do
+  it 'stops at the end of the chain rather than reaching the API' do
+    in_repo(committed: true, home: home_with_config, arguments: %w{github.com/thoran/whatever}) do |status, output|
+      _(status).wont_equal 0
+      _(output).must_match(/No access token/)
+      _(`git remote`.strip).must_be_empty
+    end
+  end
+
+  # The config file defines constants, so reading it a second time warns once
+  # per constant, and those warnings buried the real error when this was found.
+  it 'reads the config file once, whatever it is asked' do
+    in_repo(committed: true, home: home_with_config, arguments: %w{github.com/thoran/whatever}) do |_status, output|
+      _(output).wont_match(/already initialized constant/)
     end
   end
 end
