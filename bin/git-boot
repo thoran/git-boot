@@ -2,7 +2,7 @@
 # git-boot
 
 # 20260808
-# 0.14.4
+# 0.15.0
 
 require 'fileutils'
 
@@ -17,7 +17,6 @@ require_gem 'faraday/retry', gem_name: 'faraday-retry'
 
 require_gem 'impuri'
 require_gem 'net/ssh', gem_name: 'net-ssh'
-require_gem 'net/ssh/shell', gem_name: 'net-ssh-shell'
 require_gem 'octokit'
 require_gem 'switches.rb'
 require_gem 'sym'
@@ -140,14 +139,10 @@ def create_local_repo
   add_entries
 end
 
+# One command rather than a shell session: git takes the path itself, so the mkdir and the cd which needed a session to hold the working directory between them are not wanted.  The session came from net-ssh-shell, which pins net-ssh to ~> 2.1.0, and 2.1.4 offers only SHA-1 key exchange and ssh-rsa host keys, neither of which a current server will negotiate.
 def create_remote_repo
   Net::SSH.start(impuri.host, impuri.username, password: impuri.password) do |ssh|
-    ssh.shell do |sh|
-      sh.execute "mkdir #{path_to_repository_with_extension(impuri)}"
-      sh.execute "cd #{path_to_repository_with_extension(impuri)}"
-      sh.execute "git --bare init"
-      sh.execute "exit"
-    end
+    ssh.exec!("git init --bare #{path_to_repository_with_extension(impuri)}")
   end
 end
 

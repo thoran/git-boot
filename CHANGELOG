@@ -2,12 +2,28 @@
 
 ## 20260808
 
+0.15.0: Drop net-ssh-shell, which pinned net-ssh to a version no current server will talk to.
+
+1. ~ create_remote_repo(): One `git init --bare <path>` in place of a shell session running mkdir, cd, git --bare init and exit. The session existed to hold the working directory between the cd and the init, and git takes the path itself, so nothing is lost by asking for it directly.
+2. - require_gem 'net/ssh/shell', and - net-ssh-shell from the Gemfile.
+3. net-ssh-shell 0.2.0 requires net-ssh ~> 2.1.0, so requiring it pinned net-ssh at 2.1.4, from 2011. That version offers diffie-hellman-group-exchange-sha1 and diffie-hellman-group1-sha1 for key exchange and ssh-rsa and ssh-dss for host keys. OpenSSH enables no SHA-1 key exchange by default and dropped ssh-rsa at 8.8, so there is no overlap to negotiate: this path could not have connected to a current server, and only the Github path being the one in use kept that from being noticed.
+4. net-ssh is free to be 7 now, the pin having been the only thing holding it at 2.
+5. Error handling is unchanged and remains absent: sh.execute never had its result looked at, and ssh.exec! does not have its output looked at either. A remote git init which fails is still silent, and wants its own version.
+
+1. ~ main if $PROGRAM_NAME == __FILE__, in place of main. It runs when run and does nothing when loaded, which is what lets the parts a subprocess cannot get to be called instead. load rather than require in the test, the file having no extension for require to append.
+2. + Eight tests over remote_uri, github? and entries_to_add, none of which had any. Everything from remote_uri onwards stands behind either a Github token or a live ssh host, so no subprocess reaches it and the nineteen tests here went around it.
+3. This was checked the way it ought to have been the first time. The descriptor was verified for 0.14.3 by a script which called the real ImpURI#to_ssh but retyped these three lines rather than reading them, so it confirmed the design and could not have caught a fault in the code. Dropping the github? test, dropping the .git extension, and stripping the slash from ssh paths were each tried against these tests: three failures, three failures and one, and none against the code as it stands.
+4. entries_to_add is the one which has actually bitten, and it was covered only by what a run of git-boot happened to commit. It is asserted upon directly now.
+
+## 20260808
+
 0.14.4: Make the parts reachable, and reach them.
 
 1. ~ main if $PROGRAM_NAME == __FILE__, in place of main. It runs when run and does nothing when loaded, which is what lets the parts a subprocess cannot get to be called instead. load rather than require in the test, the file having no extension for require to append.
 2. + Eight tests over remote_uri, github? and entries_to_add, none of which had any. Everything from remote_uri onwards stands behind either a Github token or a live ssh host, so no subprocess reaches it and the nineteen tests here went around it.
 3. This was checked the way it ought to have been the first time. The descriptor was verified for 0.14.3 by a script which called the real ImpURI#to_ssh but retyped these three lines rather than reading them, so it confirmed the design and could not have caught a fault in the code. Dropping the github? test, dropping the .git extension, and stripping the slash from ssh paths were each tried against these tests: three failures, three failures and one, and none against the code as it stands.
 4. entries_to_add is the one which has actually bitten, and it was covered only by what a run of git-boot happened to commit. It is asserted upon directly now.
+
 
 ## 20260808
 
