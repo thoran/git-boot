@@ -2,6 +2,15 @@
 
 ## 20260808
 
+0.14.4: Make the parts reachable, and reach them.
+
+1. ~ main if $PROGRAM_NAME == __FILE__, in place of main. It runs when run and does nothing when loaded, which is what lets the parts a subprocess cannot get to be called instead. load rather than require in the test, the file having no extension for require to append.
+2. + Eight tests over remote_uri, github? and entries_to_add, none of which had any. Everything from remote_uri onwards stands behind either a Github token or a live ssh host, so no subprocess reaches it and the nineteen tests here went around it.
+3. This was checked the way it ought to have been the first time. The descriptor was verified for 0.14.3 by a script which called the real ImpURI#to_ssh but retyped these three lines rather than reading them, so it confirmed the design and could not have caught a fault in the code. Dropping the github? test, dropping the .git extension, and stripping the slash from ssh paths were each tried against these tests: three failures, three failures and one, and none against the code as it stands.
+4. entries_to_add is the one which has actually bitten, and it was covered only by what a run of git-boot happened to commit. It is asserted upon directly now.
+
+## 20260808
+
 0.14.3: Build the remote descriptor with ImpURI#to_ssh.
 
 1. + remote_uri, and push_to_remote_repo takes the descriptor rather than building it. What was there interpolated "#{username}@#{hostname}:#{path}", and a URI path is not an scp path: after a colon a leading slash says the path begins at the root, whereas in a URI it merely separates the path from the hostname. So github.com/thoran/lineage gave git@github.com:/thoran/lineage, which is what the origin of every repository booted here has said. Github forgives it, the path there being an owner and a repository rather than a place upon a disk.

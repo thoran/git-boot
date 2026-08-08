@@ -1,12 +1,17 @@
 # test/git-boot_test.rb
 
 # 20260808
-# 0.14.2
+# 0.14.4
 
-# git-boot is run as a subprocess in a directory made for the purpose, and
-# what is asserted is the state of the repository it leaves behind rather than
-# anything it printed.  With no argument it does the local half and stops, so
-# nothing here needs a network, a remote, or a credential.
+# Two ways in.  Most of this runs git-boot as a subprocess in a directory made
+# for the purpose, and asserts upon the repository it leaves behind rather than
+# upon anything it printed.  With no argument it does the local half and stops,
+# so nothing there needs a network, a remote, or a credential.
+#
+# The rest loads it, which runs nothing, and calls the parts no subprocess can
+# reach: everything from remote_uri onwards stands behind either a Github token
+# or a live ssh host, so the only way to the descriptor is to call for it.
+# load rather than require, the file having no extension to append.
 
 require 'minitest/autorun'
 require 'fileutils'
@@ -14,6 +19,7 @@ require 'open3'
 require 'tmpdir'
 
 BIN = File.expand_path('../bin/git-boot', __dir__)
+load BIN
 
 def in_repo(files: [], initialised: false, committed: false, origin: nil, arguments: [], home: nil)
   Dir.mktmpdir do |directory|
@@ -49,6 +55,79 @@ end
 
 def tracked
   `git ls-files`.lines.map(&:strip).sort
+end
+
+# Called rather than run, this being the code a subprocess cannot get to.  What
+# it decides is what to hand ImpURI#to_ssh: the git user for Github, and the
+# .git extension the repository was created with.
+describe 'the remote descriptor' do
+  def descriptor_for(uri)
+    ARGV.replace([uri])
+    remote_uri
+  end
+
+  after do
+    ARGV.replace([])
+  end
+
+  it 'renders a Github repository as the git user, with the extension' do
+    _(descriptor_for('github.com/thoran/lineage')).must_equal 'git@github.com:thoran/lineage.git'
+  end
+
+  it 'leaves an extension which is already there' do
+    _(descriptor_for('github.com/thoran/lineage.git')).must_equal 'git@github.com:thoran/lineage.git'
+  end
+
+  # A leading slash after the colon is the difference between a path from the
+  # root and one from the login directory, so an ssh path keeps what it was
+  # given while a URI path loses the slash which merely separated it.
+  it 'keeps an ssh path from the root' do
+    _(descriptor_for('user@host.com:/srv/git/thing')).must_equal 'user@host.com:/srv/git/thing.git'
+  end
+
+  it 'keeps an ssh path from the login directory' do
+    _(descriptor_for('user@host.com:thing')).must_equal 'user@host.com:thing.git'
+  end
+
+  # The git user is Github's alone, and imposing it everywhere would push to
+  # every other host as the wrong user.
+  it 'leaves the user alone for anything but Github' do
+    _(descriptor_for('someone@host.com:thing')).must_match(/\Asomeone@/)
+    _(github?).must_equal false
+  end
+
+  it 'knows Github from anywhere else' do
+    ARGV.replace(['github.com/thoran/lineage'])
+    _(github?).must_equal true
+    ARGV.replace(['user@host.com:thing'])
+    _(github?).must_equal false
+  end
+end
+
+# The case which has actually bitten, asserted upon directly now rather than
+# through what a run of git-boot happened to commit.
+describe 'entries_to_add' do
+  def in_directory(*files)
+    Dir.mktmpdir do |directory|
+      Dir.chdir(directory) do
+        FileUtils.mkdir('.git')
+        files.each{|name| FileUtils.touch(name)}
+        yield
+      end
+    end
+  end
+
+  it 'leaves out the directory entries, .git and .gitignore' do
+    in_directory('a.rb', '.gitignore', '.envrc') do
+      _(entries_to_add.sort).must_equal %w{.envrc a.rb}
+    end
+  end
+
+  it 'is empty where there is nothing but a .gitignore' do
+    in_directory('.gitignore') do
+      _(entries_to_add).must_be_empty
+    end
+  end
 end
 
 describe 'git-boot in an empty directory' do
