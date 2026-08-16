@@ -1,7 +1,7 @@
 # test/git-boot_test.rb
 
-# 20260808
-# 0.14.4
+# 20260816
+# 0.16.0
 
 # Two ways in.  Most of this runs git-boot as a subprocess in a directory made
 # for the purpose, and asserts upon the repository it leaves behind rather than
@@ -21,11 +21,12 @@ require 'tmpdir'
 BIN = File.expand_path('../bin/git-boot', __dir__)
 load BIN
 
-def in_repo(files: [], initialised: false, committed: false, origin: nil, arguments: [], home: nil)
+def in_repo(files: [], contents: {}, initialised: false, committed: false, origin: nil, arguments: [], home: nil)
   Dir.mktmpdir do |directory|
     Dir.chdir(directory) do
       system('git', 'init', '--quiet') if initialised || committed || origin
       files.each{|name| FileUtils.touch(name)}
+      contents.each{|name, body| File.write(name, body)}
       make_history if committed
       system('git', 'remote', 'add', 'origin', origin) if origin
       stdout, stderr, status = Open3.capture3(home ? {'HOME' => home} : {}, BIN, *arguments)
@@ -156,6 +157,40 @@ describe 'git-boot in a directory with files' do
       _(`git rev-list --max-parents=0 HEAD`.lines.length).must_equal 1
       _(`git log --format=%s --max-parents=0`.strip).must_equal '+ .gitignore'
     end
+  end
+end
+
+# The file the root commit carries was empty for as long as git-boot had been
+# making it, and an empty .gitignore reads at a glance as though the rules are
+# there.  Thirty-one repositories were booted with one before it was noticed.
+describe 'the .gitignore the root commit carries' do
+  it 'is the template rather than an empty file' do
+    in_repo do |status, _output|
+      _(status).must_equal 0
+      _(File.read('.gitignore')).must_equal File.read(gitignore_template_path)
+    end
+  end
+
+  it 'holds the .claude rule, which an empty file was letting through' do
+    in_repo do |_status, _output|
+      _(File.read('.gitignore')).must_include '.claude'
+    end
+  end
+
+  # A .gitignore already in the directory is the repository's own, whatever it
+  # holds, and the root commit takes it as it stands rather than over it.
+  it 'leaves a .gitignore which is there already as it stands' do
+    in_repo(contents: {'.gitignore' => "*.swp\n"}) do |status, _output|
+      _(status).must_equal 0
+      _(File.read('.gitignore')).must_equal "*.swp\n"
+      _(commits).must_equal ['+ .gitignore']
+    end
+  end
+
+  # The template ships beside bin and lib rather than inside either, so it is
+  # the one thing a package can leave behind while everything else still runs.
+  it 'ships where bin/git-boot looks for it' do
+    _(File.exist?(gitignore_template_path)).must_equal true
   end
 end
 
@@ -306,10 +341,29 @@ end
 # has actually bitten.
 describe 'git-boot in a directory of dotfiles' do
   it 'adds the dotfiles without adding the directory entries or .git' do
-    in_repo(files: %w{.envrc .ruby-version}) do |status, _output|
+    in_repo(files: %w{.envrc .tool-versions}) do |status, _output|
       _(status).must_equal 0
       _(commits).must_equal ['+ .gitignore', '+ *']
-      _(tracked).must_equal %w{.envrc .gitignore .ruby-version}
+      _(tracked).must_equal %w{.envrc .gitignore .tool-versions}
+    end
+  end
+
+  # The template governs the second commit as much as it does any later one:
+  # .ruby-version is a rule in it, so a directory holding one boots without it.
+  it 'leaves out a dotfile the template ignores' do
+    in_repo(files: %w{.envrc .ruby-version}) do |status, _output|
+      _(status).must_equal 0
+      _(tracked).must_equal %w{.envrc .gitignore}
+    end
+  end
+
+  # Everything present being ignored is not the same as nothing being present,
+  # and asking git to commit an empty index earns a message rather than a commit.
+  it 'makes no second commit where everything present is ignored' do
+    in_repo(files: %w{.ruby-version}) do |status, output|
+      _(status).must_equal 0
+      _(commits).must_equal ['+ .gitignore']
+      _(output).wont_include 'nothing to commit'
     end
   end
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # git-boot
 
-# 20260808
-# 0.15.0
+# 20260816
+# 0.16.0
 
 require 'fileutils'
 
@@ -114,16 +114,29 @@ def entries_to_add
   Dir['*'] + Dir['.*'] - ['.', '..', '.git', '.gitignore']
 end
 
+def gitignore_template_path
+  File.expand_path(File.join(__FILE__, '..', '..', 'templates', 'gitignore'))
+end
+
+# Said here rather than left to write an empty file, which is the fault this template exists to correct and would be the harder one to see for having been corrected once already.  The template ships beside bin and lib, and the Homebrew formula installs all three.
+def gitignore_template
+  abort("git-boot cannot find its .gitignore template at #{gitignore_template_path}.") unless File.exist?(gitignore_template_path)
+  File.read(gitignore_template_path)
+end
+
 # The root commit is made unconditionally, so as every real commit has a parent and can be amended, reset onto, or rebased in the ordinary way.  A root commit has none, and so needs --orphan or --root to rewrite.
+# The template is written only where no .gitignore is there already: one which is already in the directory is the repository's own, whatever it holds, and is committed as it stands rather than replaced.
 def create_root_commit
-  FileUtils.touch('.gitignore')
+  File.write('.gitignore', gitignore_template) unless File.exist?('.gitignore')
   system "git add .gitignore"
   system "git commit -m '+ .gitignore'"
 end
 
+# Everything present can be ignored by the template and still be an entry to add, the count being of what is in the directory rather than of what git will take.  git diff --cached --quiet exits 0 where nothing is staged, which is the case to leave alone rather than ask git to commit and be told there is nothing to.
 def add_entries
   return if entries_to_add.empty?
   system "git add ."
+  return if system('git', 'diff', '--cached', '--quiet')
   system "git commit -m '+ *'"
 end
 

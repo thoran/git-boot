@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## 20260816
+
+0.16.0: Instead of an empty file, the root commit (.gitignore) now uses a standardised template with a number of entries.
+
+1. + templates/gitignore: the whole set for Ruby, being the same file 0.11.3 gave this repository itself. Read at runtime rather than held as a heredoc, so it stays a .gitignore to read and to edit and is diffable against the copies already in the other repositories. Named without the leading dot, a real .gitignore in that directory being a set of rules over that directory rather than a template of them.
+2. ~ create_root_commit(): writes the template where FileUtils.touch made an empty file. 0.11.3 filled out the .gitignore this repository keeps for itself and left untouched the one it hands to every repository it boots, so the fault was corrected in the one place it was visible and nowhere it mattered. Thirty-one repositories under github.com/thoran hold the empty file, each opening its history with the '+ .gitignore' commit which made it.
+3. ~ create_root_commit(): the template is written only where no .gitignore is there already. touch is a no-op upon a file which exists and File.write is not, so writing unconditionally would have destroyed a .gitignore which the directory brought with it, which is the one thing this must not do.
+4. + gitignore_template(): aborts naming the path where the template is absent, rather than falling back to the empty file. A silent fallback would reproduce the fault in the form which took longest to see.
+5. ~ add_entries(): returns where nothing is staged, git diff --cached --quiet exiting 0 in that case. entries_to_add counts what is in the directory and the template governs what git will take from it, so a directory holding nothing but ignored files is now reachable: it earned a 'nothing to commit, working tree clean' from git where it previously could not, every entry having been added before there were any rules to stop one.
+6. BREAKING, in the small: the template governs the '+ *' commit as much as any later one. A directory holding a .ruby-version, an .rvmrc, a Gemfile.lock or anything else the rules name boots without it, where before everything present was swept in.
+7. + Six tests: that the root commit carries the template and not an empty file, that it holds the .claude rule, that a .gitignore already there is left as it stands, that the template ships where bin/git-boot looks for it, that an ignored dotfile stays out, and that a directory of nothing but ignored files earns no second commit and no message.
+8. ~ test/git-boot_test.rb: in_repo takes contents:, for the case wanting a file with something in it rather than a touched one.
+9. ~ test/git-boot_test.rb: /.ruby-version/.tool-versions/ in the dotfiles test, .ruby-version being a rule in the template now and so no longer a dotfile which demonstrates that dotfiles are added.
+10. The Homebrew formula installs bin and lib by name, so templates is named there too. A directory which exists here and not in the bottle is the failure chromedriver-install 0.5.2 describes, and it shows up under Homebrew alone.
+
 ## 20260808
 
 0.15.0: Drop net-ssh-shell, which pinned net-ssh to a version no current server will talk to.
