@@ -2,6 +2,15 @@
 
 ## 20260821
 
+0.16.4: + LICENSE, and the README section naming it.
+
+1. + LICENSE: the MIT text, copyright 2010-2026 thoran. The year is that of the first commit.
+2. + README.md: a License section, saying MIT, last as the four repositories here which already had one have it.
+3. ~ bin/git-boot: /0.16.3/0.16.4/, and the date.
+
+
+## 20260821
+
 0.16.3: ~ lib/Hash/symbolize_keysX.rb: 0.0.0 --> 0.1.0, taking what ~/lib/ruby now has.
 
 1. ~ lib/Hash/symbolize_keysX.rb: 0.0.0 --> 0.1.0. The method is untouched, symbolize_keys! being the same three lines in every copy of this file anywhere. What 0.1.0 carries is the comment on line 2 restored to Hash#symbolize_keys!, which this copy alone had dropped the bang from, and an `if __FILE__ == $0` self-test appended, which does not run when the file is required.
