@@ -1,8 +1,8 @@
 # Hash/symbolize_keysX.rb
-# Hash#symbolize_keys
+# Hash#symbolize_keys!
 
 # 20200106
-# 0.0.0
+# 0.1.0
 
 class Hash
 
@@ -13,4 +13,17 @@ class Hash
     self
   end
 
+end
+
+if __FILE__ == $0
+  before = {'a' => 1, 'b' => 2}
+  desired_after = {:a => 1, :b => 2}
+  after = before.symbolize_keys!
+  if after == desired_after
+    print '.'
+  else
+    print 'x'
+  end
+
+  puts
 end

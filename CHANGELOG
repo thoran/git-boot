@@ -2,6 +2,13 @@
 
 ## 20260821
 
+0.16.3: ~ lib/Hash/symbolize_keysX.rb: 0.0.0 --> 0.1.0, taking what ~/lib/ruby now has.
+
+1. ~ lib/Hash/symbolize_keysX.rb: 0.0.0 --> 0.1.0. The method is untouched, symbolize_keys! being the same three lines in every copy of this file anywhere. What 0.1.0 carries is the comment on line 2 restored to Hash#symbolize_keys!, which this copy alone had dropped the bang from, and an `if __FILE__ == $0` self-test appended, which does not run when the file is required.
+2. ~/lib/ruby took 0.1.0 from _libraries/_Ruby.extend/Hash/symbolize_keysX/1 the same day, along with seventeen other extensions which had been sitting there ahead of the deployed tree. Without this the vendored copy would report as drift on every future vendor_requires pass, for a difference of one character and a test block.
+3. Four copies of this file exist and hold three distinct contents: _Ruby.extend/0 and this repository both said 0.0.0 while differing by that one character, and _Ruby.extend/1 and ~/lib/ruby agree at 0.1.0. That is settled now for this repository's copy.
+
+
 0.16.2: + gem 'ostruct' to the Gemfile, which had never declared what it loads.
 
 1. + gem 'ostruct'. It is loaded at runtime, required by lib/Array/to_csv.rb and by the OpenStruct/to_csv_row.rb and OpenStruct/to_csv_header_row.rb pair, all three of which Credentials reaches. The Gemfile declared faraday-retry, impuri, net-ssh, octokit, switches.rb and sym, and not this.
