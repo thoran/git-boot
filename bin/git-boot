@@ -2,7 +2,7 @@
 # git-boot
 
 # 20260821
-# 0.16.1
+# 0.16.2
 
 require 'fileutils'
 

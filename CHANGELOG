@@ -2,6 +2,14 @@
 
 ## 20260821
 
+0.16.2: + gem 'ostruct' to the Gemfile, which had never declared what it loads.
+
+1. + gem 'ostruct'. It is loaded at runtime, required by lib/Array/to_csv.rb and by the OpenStruct/to_csv_row.rb and OpenStruct/to_csv_header_row.rb pair, all three of which Credentials reaches. The Gemfile declared faraday-retry, impuri, net-ssh, octokit, switches.rb and sym, and not this.
+2. The formula has vendored ostruct as a resource all along, so an installed git-boot has never wanted for it. What was missing was the declaration, which is the thing a Gemfile is for.
+3. audit_requires had this as its one complaint here, "answered only by a gem which is not a declared dependency", and reports nothing at all now. That is the whole of the change: no file this installs is altered.
+4. Placed after octokit, the list being alphabetical.
+
+
 0.16.1: Vendor the two extract_optionsX files which had been resolving from impuri, and drop the two nothing reaches.
 
 1. + lib/Array/extract_optionsX.rb and lib/Thoran/Array/ExtractOptionsX/extract_optionsX.rb, taken from ~/lib/ruby by vendor_requires. lib/SimpleCSV.rb and lib/Hash/to_csv.rb each require 'Array/extract_optionsX' and call extract_options!, and that require had been answered by the impuri gem rather than from here: a dependency resolved transitively rather than declared.
