@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 20260821
+
+0.16.1: Vendor the two extract_optionsX files which had been resolving from impuri, and drop the two nothing reaches.
+
+1. + lib/Array/extract_optionsX.rb and lib/Thoran/Array/ExtractOptionsX/extract_optionsX.rb, taken from ~/lib/ruby by vendor_requires. lib/SimpleCSV.rb and lib/Hash/to_csv.rb each require 'Array/extract_optionsX' and call extract_options!, and that require had been answered by the impuri gem rather than from here: a dependency resolved transitively rather than declared.
+2. - lib/File/self.collect.rb and lib/Thoran/File/SelfCollect/self.collect.rb. Nothing requires them and nothing calls File.collect. Two in and two out, so lib holds forty-four files still.
+3. impuri ships its own Array/extract_optionsX.rb and both now load, which is worth saying plainly. They do not fight: impuri defines extract_options! directly upon Array, and a method defined upon the class wins over the same name arriving through an included module whatever the load order, while the vendored copy defines it within Thoran::Array::ExtractOptionsX and adds an extract_options alias besides. Both bodies are last.is_a?(::Hash) ? pop : {}, so nothing turns on which answers.
+4. What changes is what happens when impuri does not answer. The require is satisfied from here now, where before it rested upon impuri continuing to ship a path of its own. The comment at bin/git-boot:24 records the version of this which had already bitten: an impuri present but too old is neither absent nor usable.
+5. audit_requires reports nothing missing beyond ostruct, which 0.16.2 declares.
+
+
 ## 20260816
 
 0.16.0: Instead of an empty file, the root commit (.gitignore) now uses a standardised template with a number of entries.
