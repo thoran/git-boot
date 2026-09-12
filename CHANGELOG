@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 20260912
+
+0.16.5: ~ push_to_remote_repo(): + --set-upstream, the booted branch having tracked nothing.
+
+1. ~ bin/git-boot: `git push --follow-tags origin HEAD` --> `git push --follow-tags --set-upstream origin HEAD`. The branch and its tags went up and no tracking was set, so a freshly booted repository could not `git push` or `git pull` without arguments and `@{u}` failed on it outright.
+2. Found by release-audit, which was booted with this on 20260911 and then reported itself as having no upstream. org_chart, rcat and whitehorse-gutter-cleaning were booted before it and are in the same state.
+3. --set-upstream against HEAD sets tracking for whatever branch HEAD names, and fails rather than mis-setting where HEAD is detached, which is the better of the two.
+4. ~ bin/git-boot: /0.16.4/0.16.5/, and the date.
+
 ## 20260821
 
 0.16.4: + LICENSE, and the README section naming it.

@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # git-boot
 
-# 20260821
-# 0.16.4
+# 20260912
+# 0.16.5
 
 require 'fileutils'
 
@@ -191,7 +191,7 @@ end
 
 def push_to_remote_repo(uri = remote_uri)
   system('git', 'remote', 'add', 'origin', uri)
-  system('git', 'push', '--follow-tags', 'origin', 'HEAD')
+  system('git', 'push', '--follow-tags', '--set-upstream', 'origin', 'HEAD')
 end
 
 def main
