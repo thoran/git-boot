@@ -5,6 +5,9 @@ require 'Pd/ConfigFile'
 
 module Pd
   class KeyFile
+    # A RuntimeError still, so as whatever caught the bare one catches this, while a caller for whom a missing key is ordinary can let this through and nothing else.
+    class KeyMissing < RuntimeError; end
+
     class << self
       DEFAULT_KEY_FILENAME = '~/.config/pdsh/key.txt'
 
@@ -55,7 +58,7 @@ module Pd
         if File.exist?(key_location)
           File.read(key_location)
         else
-          raise RuntimeError, key_missing_message
+          raise KeyMissing, key_missing_message
         end
       end
     end # class << self

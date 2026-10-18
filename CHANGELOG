@@ -1,4 +1,14 @@
-# CHANGELOG
+# git-boot/CHANGELOG
+
+## 20261017
+
+0.16.6: ~ encrypted_access_token(): a missing key falls through to the token file, as 0.11.2 intended, rather than ending upon a backtrace.
+
+1. ~ lib/Pd/KeyFile.rb: taken from Pd 2.7.0, whose KeyFile.key raises Pd::KeyFile::KeyMissing, a RuntimeError, where the key file is absent.
+2. ~ encrypted_access_token(): + rescue Pd::KeyFile::KeyMissing. SystemCallError alone covered a missing store and not a missing key. Named rather than rescuing RuntimeError, so as any other failure of a reachable store still stops.
+3. + test/git-boot_test.rb: with the store present and no key, access_token reads the token file, or with no token file either stops upon 'No access token'; and KeyMissing is a RuntimeError.
+4. ~ test/git-boot_test.rb: home_with_config(): + token:, + store:.
+5. ~ bin/git-boot, test/git-boot_test.rb: /0.16.5/0.16.6/ and /0.16.0/0.16.6/, and the dates.
 
 ## 20260912
 

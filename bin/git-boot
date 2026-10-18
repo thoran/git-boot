@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # git-boot
 
-# 20260912
-# 0.16.5
+# 20261017
+# 0.16.6
 
 require 'fileutils'
 
@@ -82,11 +82,15 @@ end
 # key is not to hand, which is ordinary, so that falls through to the next
 # source. A named credential which the store does not hold is a
 # misconfiguration, naming it being a statement of intent, so that stops.
+# Unreachable is either of two things: the store's file is absent, which is a
+# SystemCallError, or the store is there and its key is not, which is a
+# Pd::KeyFile::KeyMissing.  That one is named rather than RuntimeError at large,
+# so as a store which is reachable and fails for any other reason still stops.
 def encrypted_access_token
   return nil unless access_token_name
   begin
     credentials = Credentials.find(encrypted_access_token_label)
-  rescue SystemCallError
+  rescue SystemCallError, Pd::KeyFile::KeyMissing
     return nil
   end
   begin

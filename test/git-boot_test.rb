@@ -1,7 +1,7 @@
 # test/git-boot_test.rb
 
-# 20260816
-# 0.16.0
+# 20261017
+# 0.16.6
 
 # Two ways in.  Most of this runs git-boot as a subprocess in a directory made
 # for the purpose, and asserts upon the repository it leaves behind rather than
@@ -36,11 +36,15 @@ def in_repo(files: [], contents: {}, initialised: false, committed: false, origi
 end
 
 # A HOME of its own, holding the config file and no token beside it, so as the
-# chain is walked to its end without any of this reading the real one.
-def home_with_config
+# chain is walked to its end without any of this reading the real one.  token:
+# puts a token file beside it, and store: an encrypted store with no key to it,
+# the key being looked for under this HOME and there being none there.
+def home_with_config(token: nil, store: false)
   home = Dir.mktmpdir
   FileUtils.mkdir_p(File.join(home, '.config', 'github'))
   File.write(File.join(home, '.config', 'github', 'config.rb'), "ACCESS_TOKEN_NAME = 'whichever'\n")
+  File.write(File.join(home, '.config', 'github', 'whichever.token'), "#{token}\n") if token
+  File.write(File.join(home, '.pd'), "encrypted, notionally\n") if store
   home
 end
 
@@ -281,6 +285,39 @@ describe 'git-boot reading the access token config' do
       _(output).wont_match(/retry middleware/)
       _(output).wont_match(/warning:/)
     end
+  end
+end
+
+# The store being there and its key not is the ordinary state of affairs with
+# the key not to hand, and it falls through to the token file as an
+# absent store does.  Pd::KeyFile had said so with a bare RuntimeError, which
+# nothing caught, and the run ended upon a backtrace.  Asked for in a process
+# of its own, a token found being one which would otherwise go to the API.
+describe 'access_token where the store is there and its key is not' do
+  def access_token_with(home)
+    stdout, stderr, status = Open3.capture3({'HOME' => home}, RbConfig.ruby, '-e', "load #{BIN.dump}; print access_token")
+    [status.exitstatus, stdout, stderr]
+  end
+
+  it 'falls through to the token file' do
+    status, stdout, stderr = access_token_with(home_with_config(token: 'from-the-file', store: true))
+    _(stderr).must_be_empty
+    _(status).must_equal 0
+    _(stdout).must_equal 'from-the-file'
+  end
+
+  it 'stops at the end of the chain where there is no token file either' do
+    status, _stdout, stderr = access_token_with(home_with_config(store: true))
+    _(status).wont_equal 0
+    _(stderr).must_match(/No access token/)
+    _(stderr).wont_match(/key file cannot be found/)
+  end
+
+  # A subclass rather than a rescue of RuntimeError at large, so as this one
+  # case is let through and anything else stops, and so as whatever else
+  # catches RuntimeError around Pd::KeyFile.key still catches this.
+  it 'is told apart by an error of its own, which is still a RuntimeError' do
+    _(Pd::KeyFile::KeyMissing.ancestors).must_include RuntimeError
   end
 end
 
