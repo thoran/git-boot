@@ -1,5 +1,15 @@
 # git-boot/CHANGELOG
 
+## 20261029
+
+0.16.7: ~ main(): the switches are parsed before create_local_repo, so as --help or an unknown switch stops before the directory is touched.
+
+1. ~ main(): switches is called ahead of create_local_repo rather than after it. --help printed and exited only once the directory had been git init'd and everything in it committed.
+2. ~ switches(): + rescue OptionParser::ParseError, which aborts with OptionParser's message rather than a backtrace.
+3. + test/git-boot_test.rb: --help and -h leave a directory as they found it, and an unknown switch is refused with the directory untouched.
+4. ~ test/git-boot_test.rb: the comment upon --private, which said an undeclared switch is left in ARGV, where OptionParser refuses it.
+5. ~ bin/git-boot, test/git-boot_test.rb: /0.16.6/0.16.7/, and the dates.
+
 ## 20261017
 
 0.16.6: ~ encrypted_access_token(): a missing key falls through to the token file, as 0.11.2 intended, rather than ending upon a backtrace.

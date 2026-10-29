@@ -1,7 +1,7 @@
 # test/git-boot_test.rb
 
-# 20261017
-# 0.16.6
+# 20261029
+# 0.16.7
 
 # Two ways in.  Most of this runs git-boot as a subprocess in a directory made
 # for the purpose, and asserts upon the repository it leaves behind rather than
@@ -225,8 +225,8 @@ describe 'git-boot in a repository which already has commits' do
 end
 
 # Whether the repository is made private cannot be asserted without the API and
-# a token, so what is tested is that the switch is consumed: an undeclared
-# switch is left in ARGV, and ARGV[0] is read as the repository to create.
+# a token, so what is tested is that the switch is declared and consumed, rather
+# than refused or left in ARGV to be read as the repository to create.
 describe 'git-boot --private' do
   it 'is taken as a switch rather than as the repository to create' do
     in_repo(arguments: %w{--private}) do |status, _output|
@@ -253,6 +253,46 @@ describe 'git-boot --private' do
     ) do |status, output|
       _(status).wont_equal 0
       _(output).must_match(/already has a remote named origin/)
+    end
+  end
+end
+
+# The switches are parsed before the directory is touched.  --help had come
+# after the local half, and so booted whichever directory it was asked in.
+describe 'git-boot --help' do
+  it 'leaves an empty directory empty' do
+    in_repo(arguments: %w{--help}) do |status, output|
+      _(status).must_equal 0
+      _(output).must_match(/Usage:/)
+      _(File.exist?('.git')).must_equal false
+      _(Dir.children('.')).must_be_empty
+    end
+  end
+
+  it 'does the same in its short form' do
+    in_repo(arguments: %w{-h}) do |status, _output|
+      _(status).must_equal 0
+      _(File.exist?('.git')).must_equal false
+    end
+  end
+
+  it 'leaves the files in a directory unadded' do
+    in_repo(files: %w{a.rb}, arguments: %w{--help}) do |status, _output|
+      _(status).must_equal 0
+      _(Dir.children('.')).must_equal ['a.rb']
+    end
+  end
+end
+
+# OptionParser raises upon a switch it does not know, and that had come after
+# the local half too, leaving a booted repository and a backtrace.
+describe 'git-boot with a switch it does not know' do
+  it 'refuses, and leaves the directory as it was' do
+    in_repo(files: %w{a.rb}, arguments: %w{--bogus}) do |status, output|
+      _(status).wont_equal 0
+      _(output).must_include 'Invalid option: --bogus.'
+      _(output).wont_match(/OptionParser::InvalidOption/)
+      _(Dir.children('.')).must_equal ['a.rb']
     end
   end
 end

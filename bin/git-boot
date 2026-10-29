@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # git-boot
 
-# 20261017
-# 0.16.6
+# 20261029
+# 0.16.7
 
 require 'fileutils'
 
@@ -24,12 +24,15 @@ require_gem 'sym'
 # require_gem installs what is absent, and an impuri which is present but too old is neither absent nor usable.  Said plainly here rather than left to surface as a NoMethodError from the middle of a push.
 abort('git-boot wants impuri 0.12.0 or later, for ImpURI#to_ssh.') unless ImpURI.method_defined?(:to_ssh)
 
+# OptionParser answers a switch it does not know, or cannot tell from another, by raising.  Said as a message rather than a backtrace, as the other refusals here are.
 def switches
   @switches ||= Switches.new do |s|
     s.set(:t, :token, :access_token, :personal_access_token)
     s.set(:n, :name, :token_name, :access_token_name)
     s.boolean(:p, :private)
   end
+rescue OptionParser::ParseError => e
+  abort("#{e.message.sub(/\A./, &:upcase)}.")
 end
 
 def impuri
@@ -199,8 +202,8 @@ def push_to_remote_repo(uri = remote_uri)
 end
 
 def main
+  switches # The switches need to be processed first: so as --help, or a switch which is refused, stops before the directory is touched; and so as the URL is left as the remaining entry in ARGV.
   create_local_repo
-  switches # The switches need to be processed first in order for the URL to be left as the remaining entry in ARGV.
   if ARGV[0]
     ensure_origin_is_free
     github? ? create_remote_github_repo : create_remote_repo
